@@ -1,8 +1,17 @@
-# ---> Python
+# ---> Python "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": true,
+      "source.organizeImports": true
+    },
+   
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# builds
+*.egg-info/
+build/
 
 # virtualenv
 .venv
