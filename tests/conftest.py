@@ -98,6 +98,10 @@ def pytest_configure(config):
                 'rest_framework.parsers.FormParser',
                 'rest_framework.parsers.MultiPartParser'
             ),
+            'TEST_REQUEST_RENDERER_CLASSES': (
+                'rest_framework_json_api.renderers.JSONRenderer',
+            ),
+            'TEST_REQUEST_DEFAULT_FORMAT': 'vnd.api+json'
         },
         DEFAULT_AUTO_FIELD='django.db.models.AutoField',
         SILENCED_SYSTEM_CHECKS=[

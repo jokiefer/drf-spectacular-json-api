@@ -15,8 +15,8 @@ paths:
             type: string
             enum:
             - id
-            - single
             - songs
+            - single
             - title
             - genre
             - year
@@ -99,8 +99,8 @@ paths:
             type: string
             enum:
             - id
-            - single
             - songs
+            - single
             - title
             - genre
             - year
@@ -195,14 +195,14 @@ components:
           type: string
           format: uuid
           readOnly: true
-        single:
-          allOf:
-          - $ref: '#/components/schemas/Song'
-          readOnly: true
         songs:
           type: array
           items:
             $ref: '#/components/schemas/Song'
+          readOnly: true
+        single:
+          allOf:
+          - $ref: '#/components/schemas/Song'
           readOnly: true
         title:
           type: string
@@ -253,14 +253,14 @@ components:
           type: string
           format: uuid
           readOnly: true
-        single:
-          allOf:
-          - $ref: '#/components/schemas/Song'
-          readOnly: true
         songs:
           type: array
           items:
             $ref: '#/components/schemas/Song'
+          readOnly: true
+        single:
+          allOf:
+          - $ref: '#/components/schemas/Song'
           readOnly: true
         title:
           type: string
