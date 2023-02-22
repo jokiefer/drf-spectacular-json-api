@@ -1,6 +1,11 @@
 from rest_framework_json_api.serializers import ModelSerializer
 
-from tests.models import Album, Song
+from .models import Album, Song
+
+__all__ = [
+    "SongSerializer",
+    "AlbumSerializer"
+]
 
 
 class SongSerializer(ModelSerializer):
@@ -8,7 +13,7 @@ class SongSerializer(ModelSerializer):
 
     class Meta:
         model = Song
-        fields = '__all__'
+        fields = "__all__"
 
 
 class AlbumSerializer(ModelSerializer):
@@ -25,4 +30,4 @@ class AlbumSerializer(ModelSerializer):
 
     class Meta:
         model = Album
-        fields = '__all__'
+        fields = "__all__"

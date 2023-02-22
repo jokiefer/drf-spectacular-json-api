@@ -3,6 +3,11 @@ from uuid import uuid4
 from django.db.models import (CASCADE, BooleanField, CharField, ForeignKey,
                               IntegerField, Model, UUIDField)
 
+__all__ = [
+    'Album',
+    'Song'
+]
+
 
 class Album(Model):
     id = UUIDField(primary_key=True, default=uuid4, editable=False)

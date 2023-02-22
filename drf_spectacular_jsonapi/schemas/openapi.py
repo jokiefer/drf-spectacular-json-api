@@ -90,16 +90,19 @@ class JsonApiAutoSchema(AutoSchema):
         if isinstance(self.view.ordering_fields, str) and self.view.ordering_fields == "__all__":
             # All fields can be used to sort
             for field in serializer.fields.values():
-
-                enum.append(
-                    format_field_name(field.field_name))
+                field_name = format_field_name(field.field_name)
+                enum.append(field_name)
+                enum.append(f"-{field_name}")
         elif isinstance(self.view.ordering_fields, list):
             # only a subset of fields are provided as sortable
             for field_name in self.view.ordering_fields:
-                enum.append(format_field_name(field_name))
+                field_name = format_field_name(field_name)
+                enum.append(field_name)
+                enum.append(f"-{field_name}")
         if enum:
-            sort_param["schema"]["uniqueItems"] = True
-            sort_param["schema"]["enum"] = enum
+            sort_param["schema"]["type"] = "array"
+            sort_param["schema"]["items"] = {"type": "string", "enum": enum}
+            sort_param["explode"] = False
 
     def get_tags(self) -> List[str]:
         # TODO: add a setting wich allows to configure the behaviour?
