@@ -12,6 +12,7 @@ __pycache__/
 # builds
 *.egg-info/
 build/
+dist/
 
 # virtualenv
 .venv
