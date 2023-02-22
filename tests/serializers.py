@@ -4,6 +4,7 @@ from tests.models import Album, Song
 
 
 class SongSerializer(ModelSerializer):
+    """ """
 
     class Meta:
         model = Song
@@ -11,6 +12,8 @@ class SongSerializer(ModelSerializer):
 
 
 class AlbumSerializer(ModelSerializer):
+    """ """
+
     songs = SongSerializer(many=True, read_only=True)
     single = SongSerializer(read_only=True)
 

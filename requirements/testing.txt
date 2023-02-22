@@ -8,3 +8,4 @@ djangorestframework-stubs>=1.1.0
 types-PyYAML>=0.1.6
 isort>=5.0.4
 autopep8==2.0.0
+djangorestframework-jsonapi[django-filter]==6.0.0

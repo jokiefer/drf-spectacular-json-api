@@ -6,26 +6,6 @@ paths:
   /albums/:
     get:
       operationId: albums_list
-      description: |-
-        This mixin provides a helper attributes to select or prefetch related models
-        based on the include specified in the URL.
-
-        __all__ can be used to specify a prefetch which should be done regardless of the include
-
-
-        .. code:: python
-
-            # When MyViewSet is called with ?include=author it will prefetch author and authorbio
-            class MyViewSet(viewsets.ModelViewSet):
-                queryset = Book.objects.all()
-                prefetch_for_includes = {
-                    '__all__': [],
-                    'category.section': ['category']
-                }
-                select_for_includes = {
-                    '__all__': [],
-                    'author': ['author', 'author__authorbio'],
-                }
       parameters:
       - in: query
         name: fields[Album]
@@ -35,8 +15,8 @@ paths:
             type: string
             enum:
             - id
-            - songs
             - single
+            - songs
             - title
             - genre
             - year
@@ -44,6 +24,12 @@ paths:
         description: endpoint return only specific fields in the response on a per-type
           basis by including a fields[TYPE] query parameter.
         explode: false
+      - name: filter[search]
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
       - in: query
         name: include
         schema:
@@ -55,6 +41,18 @@ paths:
         description: include query parameter to allow the client to customize which
           related resources should be returned.
         explode: false
+      - name: page[number]
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page[size]
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - Album
       security:
@@ -64,38 +62,19 @@ paths:
       responses:
         '200':
           content:
-            application/json:
+            application/vnd.api+json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Album'
+                $ref: '#/components/schemas/PaginatedAlbumList'
           description: ''
     post:
       operationId: albums_create
-      description: |-
-        This mixin provides a helper attributes to select or prefetch related models
-        based on the include specified in the URL.
-
-        __all__ can be used to specify a prefetch which should be done regardless of the include
-
-
-        .. code:: python
-
-            # When MyViewSet is called with ?include=author it will prefetch author and authorbio
-            class MyViewSet(viewsets.ModelViewSet):
-                queryset = Book.objects.all()
-                prefetch_for_includes = {
-                    '__all__': [],
-                    'category.section': ['category']
-                }
-                select_for_includes = {
-                    '__all__': [],
-                    'author': ['author', 'author__authorbio'],
-                }
       tags:
       - Album
       requestBody:
-        content: {}
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/Album'
         required: true
       security:
       - cookieAuth: []
@@ -104,33 +83,13 @@ paths:
       responses:
         '201':
           content:
-            application/json:
+            application/vnd.api+json:
               schema:
                 $ref: '#/components/schemas/Album'
           description: ''
   /albums/{id}/:
     get:
       operationId: albums_retrieve
-      description: |-
-        This mixin provides a helper attributes to select or prefetch related models
-        based on the include specified in the URL.
-
-        __all__ can be used to specify a prefetch which should be done regardless of the include
-
-
-        .. code:: python
-
-            # When MyViewSet is called with ?include=author it will prefetch author and authorbio
-            class MyViewSet(viewsets.ModelViewSet):
-                queryset = Book.objects.all()
-                prefetch_for_includes = {
-                    '__all__': [],
-                    'category.section': ['category']
-                }
-                select_for_includes = {
-                    '__all__': [],
-                    'author': ['author', 'author__authorbio'],
-                }
       parameters:
       - in: query
         name: fields[Album]
@@ -140,8 +99,8 @@ paths:
             type: string
             enum:
             - id
-            - songs
             - single
+            - songs
             - title
             - genre
             - year
@@ -176,32 +135,12 @@ paths:
       responses:
         '200':
           content:
-            application/json:
+            application/vnd.api+json:
               schema:
                 $ref: '#/components/schemas/Album'
           description: ''
     patch:
       operationId: albums_partial_update
-      description: |-
-        This mixin provides a helper attributes to select or prefetch related models
-        based on the include specified in the URL.
-
-        __all__ can be used to specify a prefetch which should be done regardless of the include
-
-
-        .. code:: python
-
-            # When MyViewSet is called with ?include=author it will prefetch author and authorbio
-            class MyViewSet(viewsets.ModelViewSet):
-                queryset = Book.objects.all()
-                prefetch_for_includes = {
-                    '__all__': [],
-                    'category.section': ['category']
-                }
-                select_for_includes = {
-                    '__all__': [],
-                    'author': ['author', 'author__authorbio'],
-                }
       parameters:
       - in: path
         name: id
@@ -213,7 +152,10 @@ paths:
       tags:
       - Album
       requestBody:
-        content: {}
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/PatchedAlbum'
       security:
       - cookieAuth: []
       - basicAuth: []
@@ -221,32 +163,12 @@ paths:
       responses:
         '200':
           content:
-            application/json:
+            application/vnd.api+json:
               schema:
                 $ref: '#/components/schemas/Album'
           description: ''
     delete:
       operationId: albums_destroy
-      description: |-
-        This mixin provides a helper attributes to select or prefetch related models
-        based on the include specified in the URL.
-
-        __all__ can be used to specify a prefetch which should be done regardless of the include
-
-
-        .. code:: python
-
-            # When MyViewSet is called with ?include=author it will prefetch author and authorbio
-            class MyViewSet(viewsets.ModelViewSet):
-                queryset = Book.objects.all()
-                prefetch_for_includes = {
-                    '__all__': [],
-                    'category.section': ['category']
-                }
-                select_for_includes = {
-                    '__all__': [],
-                    'author': ['author', 'author__authorbio'],
-                }
       parameters:
       - in: path
         name: id
@@ -268,39 +190,19 @@ components:
   schemas:
     Album:
       type: object
-      description: |-
-        A `ModelSerializer` is just a regular `Serializer`, except that:
-
-        * A set of default fields are automatically populated.
-        * A set of default validators are automatically populated.
-        * Default `.create()` and `.update()` implementations are provided.
-
-        The process of automatically determining a set of serializer fields
-        based on the model fields is reasonably complex, but you almost certainly
-        don't need to dig into the implementation.
-
-        If the `ModelSerializer` class *doesn't* generate the set of fields that
-        you need you should either declare the extra/differing fields explicitly on
-        the serializer class, or simply use a `Serializer` class.
-
-
-        Included Mixins:
-
-        * A mixin class to enable sparse fieldsets is included
-        * A mixin class to enable validation of included resources is included
       properties:
         id:
           type: string
           format: uuid
           readOnly: true
+        single:
+          allOf:
+          - $ref: '#/components/schemas/Song'
+          readOnly: true
         songs:
           type: array
           items:
             $ref: '#/components/schemas/Song'
-          readOnly: true
-        single:
-          allOf:
-          - $ref: '#/components/schemas/Song'
           readOnly: true
         title:
           type: string
@@ -324,41 +226,41 @@ components:
       - POP
       - ROCK
       type: string
+    PaginatedAlbumList:
+      type: object
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page[number]=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page[number]=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Album'
     PatchedAlbum:
       type: object
-      description: |-
-        A `ModelSerializer` is just a regular `Serializer`, except that:
-
-        * A set of default fields are automatically populated.
-        * A set of default validators are automatically populated.
-        * Default `.create()` and `.update()` implementations are provided.
-
-        The process of automatically determining a set of serializer fields
-        based on the model fields is reasonably complex, but you almost certainly
-        don't need to dig into the implementation.
-
-        If the `ModelSerializer` class *doesn't* generate the set of fields that
-        you need you should either declare the extra/differing fields explicitly on
-        the serializer class, or simply use a `Serializer` class.
-
-
-        Included Mixins:
-
-        * A mixin class to enable sparse fieldsets is included
-        * A mixin class to enable validation of included resources is included
       properties:
         id:
           type: string
           format: uuid
           readOnly: true
+        single:
+          allOf:
+          - $ref: '#/components/schemas/Song'
+          readOnly: true
         songs:
           type: array
           items:
             $ref: '#/components/schemas/Song'
-          readOnly: true
-        single:
-          allOf:
-          - $ref: '#/components/schemas/Song'
           readOnly: true
         title:
           type: string
@@ -371,26 +273,6 @@ components:
           type: boolean
     Song:
       type: object
-      description: |-
-        A `ModelSerializer` is just a regular `Serializer`, except that:
-
-        * A set of default fields are automatically populated.
-        * A set of default validators are automatically populated.
-        * Default `.create()` and `.update()` implementations are provided.
-
-        The process of automatically determining a set of serializer fields
-        based on the model fields is reasonably complex, but you almost certainly
-        don't need to dig into the implementation.
-
-        If the `ModelSerializer` class *doesn't* generate the set of fields that
-        you need you should either declare the extra/differing fields explicitly on
-        the serializer class, or simply use a `Serializer` class.
-
-
-        Included Mixins:
-
-        * A mixin class to enable sparse fieldsets is included
-        * A mixin class to enable validation of included resources is included
       properties:
         id:
           type: string
