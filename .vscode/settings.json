@@ -15,4 +15,7 @@
     "source.fixAll": true,
     "source.organizeImports": true
   },
+  "files.associations": {
+    "*.yaml": "home-assistant"
+  },
 }
