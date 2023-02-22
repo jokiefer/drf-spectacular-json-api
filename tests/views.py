@@ -10,6 +10,10 @@ class AlbumModelViewset(ModelViewSet):
     queryset = Album.objects.none()
     search_fields = ("id", "songs",)
     ordering_fields = ["id", "title"]
+    filterset_fields = {
+        "genre": ["exact"],
+        "title": ["contains"]
+    }
 
 
 class SongModelViewset(ModelViewSet):

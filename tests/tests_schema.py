@@ -78,6 +78,14 @@ class TestSchemaOutput(SimpleTestCase):
             },
             {
                 'in': 'query',
+                'name': 'sort',
+                'required': False,
+                'description': 'Which field to use when ordering the results.',
+                'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['id', 'title', '-id', '-title']}},
+                'explode': False
+            },
+            {
+                'in': 'query',
                 'name': 'filter[search]',
                 'required': False,
                 'description': 'A search term.',
@@ -85,11 +93,17 @@ class TestSchemaOutput(SimpleTestCase):
             },
             {
                 'in': 'query',
-                'name': 'sort',
+                'name': 'filter[genre]',
                 'required': False,
-                'description': 'Which field to use when ordering the results.',
-                'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['id', 'title', '-id', '-title']}},
-                'explode': False
+                'description': 'genre',
+                'schema': {'type': 'string', 'enum': ["POP", "ROCK"]}
+            },
+            {
+                'in': 'query',
+                'name': 'filter[title.contains]',
+                'required': False,
+                'description': 'title__contains',
+                'schema': {'type': 'string'}
             }
         ])
         self.assertEqual(calculated, expected)
