@@ -10,7 +10,7 @@ from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_type_from_serializer)
 
 from drf_spectacular_jsonapi.schemas.plumbing import (
-    build_json_api_data_frame, build_json_api_ressource_object)
+    build_json_api_data_frame, build_json_api_resource_object)
 
 
 class JsonApiAutoSchema(AutoSchema):
@@ -194,7 +194,7 @@ class JsonApiAutoSchema(AutoSchema):
     def _map_basic_serializer(self, serializer, direction):
         object_schema = super()._map_basic_serializer(
             serializer=serializer, direction=direction)
-        json_api_object_schema = build_json_api_ressource_object(
+        json_api_object_schema = build_json_api_resource_object(
             object_schema, serializer, method=self.method)
         return json_api_object_schema
 

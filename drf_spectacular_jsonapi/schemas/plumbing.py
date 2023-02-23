@@ -49,7 +49,7 @@ def build_json_api_data_frame(schema):
     }
 
 
-def build_json_api_ressource_object(schema, serializer, method):
+def build_json_api_resource_object(schema, serializer, method):
     required = []
     attributes = {}
     relationships = {}

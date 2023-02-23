@@ -7,13 +7,16 @@ open api 3 schema generator for `drf-json-api <https://github.com/django-json-ap
 Installation
 ------------
 
+.. Pre-conditions::
+    Install `django-rest-framework <https://www.django-rest-framework.org/>`, `django-rest-framework-json-api <https://django-rest-framework-json-api.readthedocs.io/en/stable/>` and `drf-spectacular <https://drf-spectacular.readthedocs.io/en/latest/>` as described by them first.
+
 Install using ``pip``\ ...
 
 .. code:: bash
 
     $ pip install drf-spectacular-jsonapi
 
-then add drf-spectacular to installed apps in ``settings.py``
+then configure the rest framework and drf-spectacular with the following settings inside your project ``settings.py``
 
 .. code:: python
 
@@ -29,15 +32,11 @@ and finally register our spectacular AutoSchema with DRF.
     REST_FRAMEWORK = {
         # YOUR SETTINGS
         "DEFAULT_SCHEMA_CLASS": "drf_spectacular_jsonapi.schemas.openapi.JsonApiAutoSchema",
+        "DEFAULT_PAGINATION_CLASS": "drf_spectacular_jsonapi.schemas.pagination.JsonApiPageNumberPagination",
     }
-
-To expose only json:api request bodys add the following spectacular setting.
-
-.. code:: python
-
     SPECTACULAR_SETTINGS = {
-        # YOUR SETTINGS
-        "PARSER_WHITELIST": ["rest_framework_json_api.parsers.JSONParser"]
+        # To provide different schema components for patch and post
+        "COMPONENT_SPLIT_REQUEST": True
     }
 
 
