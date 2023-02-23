@@ -2,13 +2,13 @@
 drf-spectecular-json-api
 ========================
 
-open api 3 schema generator for `drf-json-api <https://github.com/django-json-api/django-rest-framework-json-api>`_ package based on `drf-spectacular <https://github.com/tfranzel/drf-spectacular>`_ package.
+open api 3 schema generator for `drf-json-api <https://github.com/django-json-api/django-rest-framework-json-api>`_ package based on `drf-spectacular <https://github.com/tfranzel/drf-spectacular>`__ package.
 
 Installation
 ------------
 
 .. note::
-    Install `django-rest-framework <https://www.django-rest-framework.org/>`_, `django-rest-framework-json-api <https://django-rest-framework-json-api.readthedocs.io/en/stable/>`_ and `drf-spectacular <https://drf-spectacular.readthedocs.io/en/latest/>`_ as described by them first.
+    Install `django-rest-framework <https://www.django-rest-framework.org/>`_, `django-rest-framework-json-api <https://django-rest-framework-json-api.readthedocs.io/en/stable/>`_ and `drf-spectacular <https://drf-spectacular.readthedocs.io/en/latest/>`__ as described by them first.
 
 Install using ``pip``\ ...
 
