@@ -64,4 +64,5 @@ SPECTACULAR_SETTINGS = {
     # YOUR SETTINGS
     "PARSER_WHITELIST": ["rest_framework_json_api.parsers.JSONParser"],
     # 'DEFAULT_GENERATOR_CLASS': 'drf_spectacular_jsonapi.schemas.generators.JsonApiSchemaGenerator',
+    "COMPONENT_SPLIT_REQUEST": True
 }

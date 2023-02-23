@@ -2,14 +2,15 @@ from typing import Dict, List, Tuple
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.openapi import AutoSchema
-from drf_spectacular.plumbing import build_parameter_type, is_serializer
+from drf_spectacular.plumbing import (build_array_type, build_basic_type,
+                                      build_parameter_type, is_serializer)
 from rest_framework_json_api.serializers import SparseFieldsetsMixin
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
                                            get_resource_type_from_serializer)
 
-from drf_spectacular_jsonapi.schemas.plumbing import \
-    build_json_api_ressource_object
+from drf_spectacular_jsonapi.schemas.plumbing import (
+    build_json_api_data_frame, build_json_api_ressource_object)
 
 
 class JsonApiAutoSchema(AutoSchema):
@@ -149,8 +150,8 @@ class JsonApiAutoSchema(AutoSchema):
             include_parameter["include", "query"] = build_parameter_type(
                 name="include",
                 location="query",
-                schema={"type": "array", "items": {
-                    "type": "string", "enum": include_enum}},
+                schema=build_array_type(
+                    schema={"type": "string", "enum": include_enum}),
                 explode=False,
                 description=_(
                     "include query parameter to allow the client to customize which related resources should be returned."),
@@ -169,8 +170,7 @@ class JsonApiAutoSchema(AutoSchema):
             fields_parameters[parameter_name, "query"] = build_parameter_type(
                 name=parameter_name,
                 location="query",
-                schema={"type": "array", "items": {
-                    "type": "string", "enum": []}},
+                schema=build_array_type(schema={"type": "string", "enum": []}),
                 explode=False,
                 description=_(
                     "endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter."),
@@ -195,29 +195,10 @@ class JsonApiAutoSchema(AutoSchema):
         object_schema = super()._map_basic_serializer(
             serializer=serializer, direction=direction)
         json_api_object_schema = build_json_api_ressource_object(
-            object_schema, serializer)
+            object_schema, serializer, method=self.method)
         return json_api_object_schema
 
     def _postprocess_serializer_schema(self, schema, serializer, direction):
         if is_serializer(serializer):
-            schema = {
-                "type": "object",
-                "properties": {
-                    "data": schema
-                },
-                "required": ["data"]
-            }
-        if self.method == "PATCH":
-            # id is required in request body, but not in attributes
-            schema["properties"]["data"]["properties"]["id"].pop("readOnly")
-            schema["properties"]["data"]["properties"]["attributes"]["properties"].pop(
-                "id")
-        if self.method == "POST":
-            if schema["properties"]["data"]["properties"]["id"]["readOnly"]:
-                # https://jsonapi.org/format/#crud-creating-client-ids
-                # check if client generated ids are allowed
-                schema["properties"]["data"]["properties"].pop("id")
-            schema["properties"]["data"]["properties"]["attributes"]["properties"].pop(
-                "id")
-
+            schema = build_json_api_data_frame(schema)
         return super()._postprocess_serializer_schema(schema, serializer, direction)

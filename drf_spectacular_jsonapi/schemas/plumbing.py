@@ -39,38 +39,20 @@ def build_json_api_relationship_object(field):
     return schema
 
 
-def build_json_api_ressource_object(schema, serializer):
+def build_json_api_data_frame(schema):
+    return {
+        "type": "object",
+        "properties": {
+            "data": schema
+        },
+        "required": ["data"]
+    }
+
+
+def build_json_api_ressource_object(schema, serializer, method):
     required = []
     attributes = {}
     relationships = {}
-
-    for field in serializer.fields.values():
-        field_schema = schema["properties"][field.field_name]
-        if isinstance(field, serializers.HyperlinkedIdentityField):
-            # the 'url' is not an attribute but rather a self.link, so don't map it here.
-            continue
-        if isinstance(field, serializers.HiddenField):
-            continue
-        if isinstance(field, serializers.RelatedField):
-            relationships[format_field_name(
-                field.field_name)] = build_json_api_relationship_object(field)
-            continue
-        if isinstance(field, serializers.ManyRelatedField):
-            relationships[format_field_name(field.field_name)] = {
-                "type": "array",
-                "items": build_json_api_relationship_object(field)
-            }
-            continue
-
-        if field.required:
-            required.append(format_field_name(field.field_name))
-
-        if field.help_text:
-            # Ensure django gettext_lazy is rendered correctly
-            field_schema["description"] = str(field.help_text)
-
-        attributes[format_field_name(field.field_name)] = field_schema
-
     result = {
         "type": "object",
         "required": ["type", "id"],
@@ -89,6 +71,45 @@ def build_json_api_ressource_object(schema, serializer):
             # },
         },
     }
+
+    if method == "POST" and serializer.fields["id"].read_only:
+        # no id is needed on creating resources. Exception: https://jsonapi.org/format/#crud-creating-client-ids
+        result["required"].remove("id")
+        del result["properties"]["id"]
+    elif method == "POST" and not serializer.fields["id"].read_only or method == "PATCH":
+        # id is required
+        del result["properties"]["id"]["readOnly"]
+
+    for field in serializer.fields.values():
+        field_schema = schema["properties"][field.field_name]
+        if field.field_name == "id":
+            # id field shall not be part of the attributes
+            continue
+        if isinstance(field, serializers.HyperlinkedIdentityField):
+            # the 'url' is not an attribute but rather a self.link, so don't map it here.
+            continue
+        if isinstance(field, serializers.HiddenField):
+            continue
+        if isinstance(field, serializers.RelatedField):
+            relationships[format_field_name(
+                field.field_name)] = build_json_api_data_frame(build_json_api_relationship_object(field))
+            continue
+        if isinstance(field, serializers.ManyRelatedField):
+            relationships[format_field_name(field.field_name)] = build_json_api_data_frame({
+                "type": "array",
+                "items": build_json_api_relationship_object(field)
+            })
+            continue
+
+        if field.required:
+            required.append(format_field_name(field.field_name))
+
+        if field.help_text:
+            # Ensure django gettext_lazy is rendered correctly
+            field_schema["description"] = str(field.help_text)
+
+        attributes[format_field_name(field.field_name)] = field_schema
+
     if attributes:
         result["properties"]["attributes"] = {
             "type": "object",

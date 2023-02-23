@@ -111,18 +111,18 @@ class TestSchemaOutput(SimpleTestCase):
                 'schema': {'type': 'string'}
             }
         ])
-        self.assertEqual(calculated, expected)
+        self.assertEqual(expected, calculated)
 
-    def test_request_body(self):
+    def test_post_request_body(self):
         """Tests if the request body matches the json:api payload schema"""
 
         self.assertEqual(
             self.schema["paths"]["/albums/"]["post"]["requestBody"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
-            "#/components/schemas/Album"
+            "#/components/schemas/AlbumRequest"
         )
 
         calculated = self.ordered(
-            self.schema["components"]["schemas"]["Album"])
+            self.schema["components"]["schemas"]["AlbumRequest"])
         expected = self.ordered(
             {
                 "type": "object",
@@ -138,16 +138,12 @@ class TestSchemaOutput(SimpleTestCase):
                             "attributes": {
                                 "type": "object",
                                 "properties": {
-                                    # "id": {
-                                    #     "type": "string",
-                                    #     "format": "uuid",
-                                    #     "readOnly": True
-                                    # },
                                     "title": {
                                         "type": "string",
                                         "description": "The title of the Album",
                                         # TODO: "title": "Title"
                                         "maxLength": 100,
+                                        "minLength": 1,
                                     },
                                     "genre": {
                                         "type": "string",
@@ -171,11 +167,11 @@ class TestSchemaOutput(SimpleTestCase):
                                 "type": "object",
                                 "properties": {
                                     "songs": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "object",
-                                            "properties": {
-                                                "data": {
+                                        "type": "object",
+                                        "properties": {
+                                            "data": {
+                                                "type": "array",
+                                                "items": {
                                                     "type": "object",
                                                     "properties": {
                                                         "id": {
@@ -192,10 +188,10 @@ class TestSchemaOutput(SimpleTestCase):
                                                     "required": ["id", "type"],
                                                     "description": "The songs which are part of this album.",
                                                     # TODO: "title": "Songs"
-                                                }
-                                            },
-                                            "required": ["data"]
+                                                },
+                                            }
                                         },
+                                        "required": ["data"]
                                     }
                                 }
                             }
@@ -207,4 +203,100 @@ class TestSchemaOutput(SimpleTestCase):
                 "required": ["data"],
             }
         )
-        self.assertEqual(calculated, expected)
+        self.assertEqual(expected, calculated)
+
+    def test_patch_request_body(self):
+        """Tests if the request body matches the json:api payload schema"""
+
+        self.assertEqual(
+            self.schema["paths"]["/albums/{id}/"]["patch"]["requestBody"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/PatchedAlbumRequest"
+        )
+
+        calculated = self.ordered(
+            self.schema["components"]["schemas"]["PatchedAlbumRequest"])
+        expected = self.ordered(
+            {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                "enum": ["Album"]
+                            },
+                            "id": {
+                                "type": "string",
+                                "format": "uuid",
+                            },
+                            "attributes": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "description": "The title of the Album",
+                                        # TODO: "title": "Title"
+                                        "maxLength": 100,
+                                        "minLength": 1,
+                                    },
+                                    "genre": {
+                                        "type": "string",
+                                        "enum": ["POP", "ROCK"],
+                                        "description": "Wich kind of genre this Album represents"
+                                    },
+                                    "year": {
+                                        "type": "integer",
+                                        "maximum": 2147483647,
+                                        "minimum": -2147483648,
+                                        "description": "The release year"
+                                    },
+                                    "released": {
+                                        "type": "boolean",
+                                        "description": "Is this Album released or not?"
+                                    }
+                                },
+                                "required": ["title", "genre", "year", "released"]
+                            },
+                            "relationships": {
+                                "type": "object",
+                                "properties": {
+                                    "songs": {
+                                        "type": "object",
+                                        "properties": {
+                                            "data": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            # TODO: the format of the id
+                                                            "description": "The identifier of the related object."
+                                                        },
+                                                        "type": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "enum": ["Song"]
+                                                        }
+                                                    },
+                                                    "required": ["id", "type"],
+                                                    "description": "The songs which are part of this album.",
+                                                    # TODO: "title": "Songs"
+                                                },
+                                            }
+                                        },
+                                        "required": ["data"]
+                                    }
+                                }
+                            }
+                        },
+                        "required": ["type", "id"],
+                        "additionalProperties": False
+                    }
+                },
+                "required": ["data"],
+            }
+        )
+        self.assertEqual(expected, calculated)
