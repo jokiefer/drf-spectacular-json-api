@@ -1,5 +1,4 @@
 from django.test.testcases import SimpleTestCase
-from drf_spectacular.renderers import OpenApiJsonRenderer, OpenApiYamlRenderer
 from drf_spectacular.validation import validate_schema
 
 from .views import AlbumModelViewset
@@ -43,15 +42,21 @@ class TestSchemaOutput(SimpleTestCase):
     def setUp(self) -> None:
         self.maxDiff = None
         self.schema = self.generate_schema('albums', AlbumModelViewset)
+        print("")
+        print("")
+        print("schema", self.schema)
+        print("")
+        print("")
 
     def test_get_parameters(self):
+        """Tests if the queryparameters are valid"""
         calculated = self.ordered(
             self.schema["paths"]["/albums/"]["get"]["parameters"])
         expected = self.ordered([
             {
                 'in': 'query',
                 'name': 'fields[Album]',
-                'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['id', 'songs', 'single', 'title', 'genre', 'year', 'released']}},
+                'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['id', 'songs', 'title', 'genre', 'year', 'released']}},
                 'description': 'endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter.',
                 'explode': False
             },
@@ -106,4 +111,100 @@ class TestSchemaOutput(SimpleTestCase):
                 'schema': {'type': 'string'}
             }
         ])
+        self.assertEqual(calculated, expected)
+
+    def test_request_body(self):
+        """Tests if the request body matches the json:api payload schema"""
+
+        self.assertEqual(
+            self.schema["paths"]["/albums/"]["post"]["requestBody"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/Album"
+        )
+
+        calculated = self.ordered(
+            self.schema["components"]["schemas"]["Album"])
+        expected = self.ordered(
+            {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                "enum": ["Album"]
+                            },
+                            "attributes": {
+                                "type": "object",
+                                "properties": {
+                                    # "id": {
+                                    #     "type": "string",
+                                    #     "format": "uuid",
+                                    #     "readOnly": True
+                                    # },
+                                    "title": {
+                                        "type": "string",
+                                        "description": "The title of the Album",
+                                        # TODO: "title": "Title"
+                                        "maxLength": 100,
+                                    },
+                                    "genre": {
+                                        "type": "string",
+                                        "enum": ["POP", "ROCK"],
+                                        "description": "Wich kind of genre this Album represents"
+                                    },
+                                    "year": {
+                                        "type": "integer",
+                                        "maximum": 2147483647,
+                                        "minimum": -2147483648,
+                                        "description": "The release year"
+                                    },
+                                    "released": {
+                                        "type": "boolean",
+                                        "description": "Is this Album released or not?"
+                                    }
+                                },
+                                "required": ["title", "genre", "year", "released"]
+                            },
+                            "relationships": {
+                                "type": "object",
+                                "properties": {
+                                    "songs": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            # TODO: the format of the id
+                                                            "description": "The identifier of the related object."
+                                                        },
+                                                        "type": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "enum": ["Song"]
+                                                        }
+                                                    },
+                                                    "required": ["id", "type"],
+                                                    "description": "The songs which are part of this album.",
+                                                    # TODO: "title": "Songs"
+                                                }
+                                            },
+                                            "required": ["data"]
+                                        },
+                                    }
+                                }
+                            }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": False
+                    }
+                },
+                "required": ["data"],
+            }
+        )
         self.assertEqual(calculated, expected)

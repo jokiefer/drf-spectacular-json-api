@@ -2,17 +2,26 @@ from typing import Dict, List, Tuple
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.openapi import AutoSchema
-from drf_spectacular.plumbing import build_parameter_type
+from drf_spectacular.plumbing import build_parameter_type, is_serializer
 from rest_framework_json_api.serializers import SparseFieldsetsMixin
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
                                            get_resource_type_from_serializer)
+
+from drf_spectacular_jsonapi.schemas.plumbing import \
+    build_json_api_ressource_object
 
 
 class JsonApiAutoSchema(AutoSchema):
     """
     Extend DRF's spectacular AutoSchema for JSON:API serialization.
     """
+
+    #: ignore all the media types and only generate a JSON:API schema.
+    content_types = ["application/vnd.api+json"]
+
+    def get_operation(self, path, path_regex, path_prefix, method, registry):
+        return super().get_operation(path, path_regex, path_prefix, method, registry)
 
     def _get_filter_parameters(self) -> Dict:
         """ JSON:API specific handling for sort parameter
@@ -169,7 +178,7 @@ class JsonApiAutoSchema(AutoSchema):
             for field in serializer.fields.values():
                 fields_parameters[parameter_name, "query"]["schema"]["items"]["enum"].append(
                     format_field_name(field.field_name))
-        # FIXME: sparse fieldset values for included serializers are also needed
+        # TODO: sparse fieldset values for included serializers are also needed
         return fields_parameters
 
     def _process_override_parameters(self, direction="request"):
@@ -181,3 +190,34 @@ class JsonApiAutoSchema(AutoSchema):
             result = result | self.get_include_parameter()
             result = result | self.get_sparse_fieldset_parameters()
         return result
+
+    def _map_basic_serializer(self, serializer, direction):
+        object_schema = super()._map_basic_serializer(
+            serializer=serializer, direction=direction)
+        json_api_object_schema = build_json_api_ressource_object(
+            object_schema, serializer)
+        return json_api_object_schema
+
+    def _postprocess_serializer_schema(self, schema, serializer, direction):
+        if is_serializer(serializer):
+            schema = {
+                "type": "object",
+                "properties": {
+                    "data": schema
+                },
+                "required": ["data"]
+            }
+        if self.method == "PATCH":
+            # id is required in request body, but not in attributes
+            schema["properties"]["data"]["properties"]["id"].pop("readOnly")
+            schema["properties"]["data"]["properties"]["attributes"]["properties"].pop(
+                "id")
+        if self.method == "POST":
+            if schema["properties"]["data"]["properties"]["id"]["readOnly"]:
+                # https://jsonapi.org/format/#crud-creating-client-ids
+                # check if client generated ids are allowed
+                schema["properties"]["data"]["properties"].pop("id")
+            schema["properties"]["data"]["properties"]["attributes"]["properties"].pop(
+                "id")
+
+        return super()._postprocess_serializer_schema(schema, serializer, direction)

@@ -1,3 +1,5 @@
+from django.utils.translation import gettext_lazy as _
+from rest_framework_json_api.relations import ResourceRelatedField
 from rest_framework_json_api.serializers import ModelSerializer
 
 from .models import Album, Song
@@ -19,8 +21,13 @@ class SongSerializer(ModelSerializer):
 class AlbumSerializer(ModelSerializer):
     """ """
 
-    songs = SongSerializer(many=True, read_only=True)
-    single = SongSerializer(read_only=True)
+    songs = ResourceRelatedField(
+        queryset=Song.objects,
+        many=True,
+        label=_("Songs"),
+        help_text=_(
+            "The songs which are part of this album."),
+    )
 
     included_serializers = {
         "songs": SongSerializer
