@@ -40,13 +40,7 @@ class TestSchemaOutput(SimpleTestCase):
         return schema
 
     def setUp(self) -> None:
-        self.maxDiff = None
         self.schema = self.generate_schema('albums', AlbumModelViewset)
-        print("")
-        print("")
-        print("schema", self.schema)
-        print("")
-        print("")
 
     def test_get_parameters(self):
         """Tests if the queryparameters are valid"""
