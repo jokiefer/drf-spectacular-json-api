@@ -6,7 +6,7 @@ from setuptools import find_namespace_packages, setup
 name = 'drf-spectacular-jsonapi'
 package = 'drf_spectacular_jsonapi'
 description = 'open api 3 schema generator for drf-json-api package based on drf-spectacular package.'
-url = '"https://github.com/jokiefer/drf-spectecular-json-api'
+url = 'https://github.com/jokiefer/drf-spectecular-json-api'
 author = 'Jonas Kiefer'
 author_email = 'jonas.kiefer@live.com'
 license = 'BSD'
