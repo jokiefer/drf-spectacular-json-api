@@ -7,7 +7,7 @@ open api 3 schema generator for `drf-json-api <https://github.com/django-json-ap
 Installation
 ------------
 
-.. Pre-conditions::
+.. note::
     Install `django-rest-framework <https://www.django-rest-framework.org/>`_, `django-rest-framework-json-api <https://django-rest-framework-json-api.readthedocs.io/en/stable/>`_ and `drf-spectacular <https://drf-spectacular.readthedocs.io/en/latest/>`_ as described by them first.
 
 Install using ``pip``\ ...
