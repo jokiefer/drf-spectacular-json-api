@@ -20,15 +20,6 @@ then configure the rest framework and drf-spectacular with the following setting
 
 .. code:: python
 
-    INSTALLED_APPS = [
-        # ALL YOUR APPS
-        'drf_spectacular',
-    ]
-
-and finally register our spectacular AutoSchema with DRF.
-
-.. code:: python
-
     REST_FRAMEWORK = {
         # YOUR SETTINGS
         "DEFAULT_SCHEMA_CLASS": "drf_spectacular_jsonapi.schemas.openapi.JsonApiAutoSchema",
