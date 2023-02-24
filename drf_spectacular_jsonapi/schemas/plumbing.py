@@ -6,6 +6,15 @@ from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_type_from_serializer)
 
 
+def build_pagination_link(pagination):
+    return {
+        "type": "string",
+        "format": "uri",
+        "nullable": True,  # TODO: only in OpenApi 3.0.x,
+        "example": f"http://api.example.org/resource_path/?{pagination.page_query_param}=4&{pagination.page_size_query_param}=10",
+    }
+
+
 def build_json_api_relationship_object(field):
     schema = {
         "type": "object",
