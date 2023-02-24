@@ -1,0 +1,23 @@
+---
+name: 🚀 Feature Request
+description: Propose a new feature or enhancement
+labels: ["type: feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: checkboxes
+    attributes:
+      label: Raised initially as discussion
+      description:
+      options:
+        - label: Discussion was held
+          required: true
+  - type: textarea
+    attributes:
+      label: Proposed functionality
+      description: >
+        Describe in detail the new feature or behavior you are proposing.
+    validations:
+      required: true
