@@ -1,6 +1,7 @@
 from django.utils.translation import gettext_lazy as _
+from rest_framework.fields import CharField
 from rest_framework_json_api.relations import ResourceRelatedField
-from rest_framework_json_api.serializers import ModelSerializer
+from rest_framework_json_api.serializers import ModelSerializer, Serializer
 
 from .models import Album, Song
 
@@ -38,3 +39,25 @@ class AlbumSerializer(ModelSerializer):
     class Meta:
         model = Album
         fields = "__all__"
+
+
+class PasswordField(CharField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('style', {})
+
+        kwargs['style']['input_type'] = 'password'
+        kwargs['write_only'] = True
+
+        super().__init__(*args, **kwargs)
+
+
+class LoginSerializer(Serializer):
+    username = CharField(
+        label=_("username"),
+    )
+    password = PasswordField(
+        label=_("password"),
+    )
+
+    class Meta:
+        resource_name = 'Login'

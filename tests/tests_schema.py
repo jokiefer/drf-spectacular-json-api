@@ -1,7 +1,8 @@
 from django.test.testcases import SimpleTestCase
+from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 
-from .views import AlbumModelViewset
+from .urls import router
 
 
 class TestSchemaOutput(SimpleTestCase):
@@ -16,31 +17,11 @@ class TestSchemaOutput(SimpleTestCase):
         else:
             return obj
 
-    def generate_schema(self, route, viewset=None, view=None, view_function=None, patterns=None):
-        from django.urls import path
-        from drf_spectacular.generators import SchemaGenerator
-        from rest_framework import routers
-        from rest_framework.viewsets import ViewSetMixin
-
-        if viewset:
-            assert issubclass(viewset, ViewSetMixin)
-            router = routers.SimpleRouter()
-            router.register(route, viewset, basename=route)
-            patterns = router.urls
-        elif view:
-            patterns = [path(route, view.as_view())]
-        elif view_function:
-            patterns = [path(route, view_function)]
-        else:
-            assert route is None and isinstance(patterns, list)
-
-        generator = SchemaGenerator(patterns=patterns)
-        schema = generator.get_schema(request=None, public=True)
-        validate_schema(schema)  # make sure generated schemas are always valid
-        return schema
-
     def setUp(self) -> None:
-        self.schema = self.generate_schema('albums', AlbumModelViewset)
+        generator = SchemaGenerator(patterns=router.urls)
+        self.schema = generator.get_schema(request=None, public=True)
+        # make sure generated schemas are always valid
+        validate_schema(self.schema)
 
     def test_get_parameters(self):
         """Tests if the queryparameters are valid"""
