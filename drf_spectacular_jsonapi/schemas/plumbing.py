@@ -53,9 +53,9 @@ def build_json_api_resource_object(schema, serializer, method):
     required = []
     attributes = {}
     relationships = {}
-    result = {
+    resource_object_schema = {
         "type": "object",
-        "required": ["type", "id"],
+        "required": ["type"],
         "additionalProperties": False,
         "properties": {
             "type": {
@@ -63,7 +63,6 @@ def build_json_api_resource_object(schema, serializer, method):
                 "description": _("The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."),
                 "enum": [get_resource_type_from_serializer(serializer=serializer)]
             },
-            "id": schema["properties"]["id"],
             # TODO:
             # "links": {
             #     "type": "object",
@@ -72,17 +71,29 @@ def build_json_api_resource_object(schema, serializer, method):
         },
     }
 
-    if method == "POST" and serializer.fields["id"].read_only:
-        # no id is needed on creating resources. Exception: https://jsonapi.org/format/#crud-creating-client-ids
-        result["required"].remove("id")
-        del result["properties"]["id"]
-    elif method == "POST" and not serializer.fields["id"].read_only or method == "PATCH":
+    if method == "PATCH" or method == "GET" or method == "POST" and not serializer.fields["id"].read_only:
+        # case 1: PATCH:
+        # The PATCH request MUST include a single resource object as primary data.
+        # The resource object MUST contain type and id members.
+
+        # case 2: "GET"
+        # If method == "GET" this resource object schema shall be build for an response body schema definition.
         # id is required
-        del result["properties"]["id"]["readOnly"]
+
+        # case 3: "POST" with client id see: https://jsonapi.org/format/#crud-creating-client-ids
+        resource_object_schema["required"].append("id")
+        # FIXME: id could be named differently or the serializer is a non model serializer, how to resolve the pk to used as "id"?
+        resource_object_schema["properties"]["id"] = schema["properties"]["id"]
+
+        is_read_only = resource_object_schema["properties"]["id"].get(
+            "readOnly", None)
+        if is_read_only:
+            del resource_object_schema["properties"]["id"]["readOnly"]
 
     for field in serializer.fields.values():
         field_schema = schema["properties"][field.field_name]
         if field.field_name == "id":
+            # FIXME: this is just a primitive check of the primary key of this serializer
             # id field shall not be part of the attributes
             continue
         if isinstance(field, serializers.HyperlinkedIdentityField):
@@ -111,17 +122,17 @@ def build_json_api_resource_object(schema, serializer, method):
         attributes[format_field_name(field.field_name)] = field_schema
 
     if attributes:
-        result["properties"]["attributes"] = {
+        resource_object_schema["properties"]["attributes"] = {
             "type": "object",
             "properties": attributes,
         }
         if required:
-            result["properties"]["attributes"]["required"] = required
+            resource_object_schema["properties"]["attributes"]["required"] = required
 
     if relationships:
-        result["properties"]["relationships"] = {
+        resource_object_schema["properties"]["relationships"] = {
             "type": "object",
             "properties": relationships,
         }
 
-    return result
+    return resource_object_schema
