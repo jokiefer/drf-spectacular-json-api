@@ -3,11 +3,13 @@ from rest_framework.fields import CharField
 from rest_framework_json_api.relations import ResourceRelatedField
 from rest_framework_json_api.serializers import ModelSerializer, Serializer
 
-from .models import Album, Song
+from .models import Album, Song, User
 
 __all__ = [
     "SongSerializer",
-    "AlbumSerializer"
+    "AlbumSerializer",
+    "LoginSerializer",
+    "UserSerializer"
 ]
 
 
@@ -52,6 +54,7 @@ class PasswordField(CharField):
 
 
 class LoginSerializer(Serializer):
+    """Simple non model serializer"""
     username = CharField(
         label=_("username"),
     )
@@ -61,3 +64,9 @@ class LoginSerializer(Serializer):
 
     class Meta:
         resource_name = 'Login'
+
+
+class UserSerializer(ModelSerializer):
+    class Meta:
+        model = User
+        fields = "__all__"

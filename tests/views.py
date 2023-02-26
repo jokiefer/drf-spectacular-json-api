@@ -1,8 +1,9 @@
 from rest_framework import generics
 from rest_framework_json_api.views import ModelViewSet
 
-from .models import Album, Song
-from .serializers import AlbumSerializer, LoginSerializer, SongSerializer
+from .models import Album, Song, User
+from .serializers import (AlbumSerializer, LoginSerializer, SongSerializer,
+                          UserSerializer)
 
 
 class AlbumModelViewset(ModelViewSet):
@@ -33,3 +34,8 @@ class LoginRequestView(generics.GenericAPIView):
     resource_name = "LoginRequest"
     serializer_class = LoginSerializer
     authentication_classes = []
+
+
+class UserModelViewset(ModelViewSet):
+    serializer_class = UserSerializer
+    queryset = User.objects.none()

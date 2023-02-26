@@ -1,5 +1,8 @@
+from warnings import warn
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework.fields import empty
+from rest_framework.serializers import ModelSerializer
 from rest_framework_json_api import serializers
 from rest_framework_json_api.utils import (format_field_name,
                                            get_related_resource_type,
@@ -49,6 +52,15 @@ def build_json_api_data_frame(schema):
     }
 
 
+def get_primary_key_of_serializer(serializer) -> str | None:
+
+    if issubclass(serializer, ModelSerializer):
+        model = getattr(serializer.Meta, 'model')
+        # FIXME: This is only the name of the pk for the model. Serializer field naming could differs...
+        return model._meta.pk.name
+    warn(message="Can't resolve primary key for non model serializers.")
+
+
 def build_json_api_resource_object(schema, serializer, method):
     required = []
     attributes = {}
@@ -70,8 +82,9 @@ def build_json_api_resource_object(schema, serializer, method):
             # },
         },
     }
+    pk_name = get_primary_key_of_serializer(serializer=serializer)
 
-    if method == "PATCH" or method == "GET" or method == "POST" and not serializer.fields["id"].read_only:
+    if method == "PATCH" or method == "GET" or method == "POST" and not serializer.fields[pk_name].read_only:
         # case 1: PATCH:
         # The PATCH request MUST include a single resource object as primary data.
         # The resource object MUST contain type and id members.
@@ -83,7 +96,13 @@ def build_json_api_resource_object(schema, serializer, method):
         # case 3: "POST" with client id see: https://jsonapi.org/format/#crud-creating-client-ids
         resource_object_schema["required"].append("id")
         # FIXME: id could be named differently or the serializer is a non model serializer, how to resolve the pk to used as "id"?
-        resource_object_schema["properties"]["id"] = schema["properties"]["id"]
+
+        if "id" in schema["properties"]:
+            resource_object_schema["properties"]["id"] = schema["properties"]["id"]
+        else:
+            # {} is a shorthand syntax for an arbitrary-type: see https://swagger.io/docs/specification/data-models/data-types/#any
+            resource_object_schema["properties"]["id"] = schema["properties"][pk_name] if pk_name else {
+            }
 
         is_read_only = resource_object_schema["properties"]["id"].get(
             "readOnly", None)
