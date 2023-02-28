@@ -54,10 +54,12 @@ def build_json_api_data_frame(schema):
 
 def get_primary_key_of_serializer(serializer) -> str | None:
 
-    if issubclass(serializer, ModelSerializer):
+    if issubclass(serializer.__class__, ModelSerializer):
         model = getattr(serializer.Meta, 'model')
-        # FIXME: This is only the name of the pk for the model. Serializer field naming could differs...
-        return model._meta.pk.name
+        try:
+            return next(field for field in serializer.fields.values() if field.source == model._meta.pk.name).field_name
+        except StopIteration:
+            pass
     warn(message="Can't resolve primary key for non model serializers.")
 
 
@@ -84,7 +86,7 @@ def build_json_api_resource_object(schema, serializer, method):
     }
     pk_name = get_primary_key_of_serializer(serializer=serializer)
 
-    if method == "PATCH" or method == "GET" or method == "POST" and not serializer.fields[pk_name].read_only:
+    if method == "PATCH" or method == "GET" or pk_name and method == "POST" and not serializer.fields[pk_name].read_only:
         # case 1: PATCH:
         # The PATCH request MUST include a single resource object as primary data.
         # The resource object MUST contain type and id members.
@@ -95,14 +97,10 @@ def build_json_api_resource_object(schema, serializer, method):
 
         # case 3: "POST" with client id see: https://jsonapi.org/format/#crud-creating-client-ids
         resource_object_schema["required"].append("id")
-        # FIXME: id could be named differently or the serializer is a non model serializer, how to resolve the pk to used as "id"?
 
-        if "id" in schema["properties"]:
-            resource_object_schema["properties"]["id"] = schema["properties"]["id"]
-        else:
-            # {} is a shorthand syntax for an arbitrary-type: see https://swagger.io/docs/specification/data-models/data-types/#any
-            resource_object_schema["properties"]["id"] = schema["properties"][pk_name] if pk_name else {
-            }
+        # {} is a shorthand syntax for an arbitrary-type: see https://swagger.io/docs/specification/data-models/data-types/#any
+        resource_object_schema["properties"]["id"] = schema["properties"][pk_name] if pk_name else {
+        }
 
         is_read_only = resource_object_schema["properties"]["id"].get(
             "readOnly", None)
@@ -111,8 +109,7 @@ def build_json_api_resource_object(schema, serializer, method):
 
     for field in serializer.fields.values():
         field_schema = schema["properties"][field.field_name]
-        if field.field_name == "id":
-            # FIXME: this is just a primitive check of the primary key of this serializer
+        if field.field_name == pk_name:
             # id field shall not be part of the attributes
             continue
         if isinstance(field, serializers.HyperlinkedIdentityField):
