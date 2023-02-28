@@ -5,8 +5,7 @@ from drf_spectacular.validation import validate_schema
 from .urls import router
 
 
-class TestSchemaOutput(SimpleTestCase):
-
+class SimpleSchemaTestCase(SimpleTestCase):
     def ordered(self, obj):
         # don't know why, but enum values are generated in different order in different runs
         # so we order them before comparing them to get reproduceable tests
@@ -23,6 +22,9 @@ class TestSchemaOutput(SimpleTestCase):
         # make sure generated schemas are always valid
         validate_schema(self.schema)
 
+
+class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
+
     def test_get_parameters(self):
         """Tests if the queryparameters are valid"""
         calculated = self.ordered(
@@ -31,7 +33,7 @@ class TestSchemaOutput(SimpleTestCase):
             {
                 'in': 'query',
                 'name': 'fields[Album]',
-                'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['id', 'songs', 'title', 'genre', 'year', 'released']}},
+                'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['songs', 'title', 'genre', 'year', 'released']}},
                 'description': 'endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter.',
                 'explode': False
             },
@@ -266,6 +268,57 @@ class TestSchemaOutput(SimpleTestCase):
                                     }
                                 }
                             }
+                        },
+                        "required": ["type", "id"],
+                        "additionalProperties": False
+                    }
+                },
+                "required": ["data"],
+            }
+        )
+        self.assertEqual(expected, calculated)
+
+
+class TestSchemaOutputForDifferentIdFieldName(SimpleSchemaTestCase):
+
+    def test_patch_request_body(self):
+        """Tests if the request body matches the json:api payload schema"""
+        self.assertEqual(
+
+            self.schema["paths"]["/users/{username}/"]["patch"]["requestBody"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/PatchedUserRequest"
+        )
+
+        calculated = self.ordered(
+            self.schema["components"]["schemas"]["PatchedUserRequest"])
+        expected = self.ordered(
+            {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                "enum": ["User"]
+                            },
+                            "id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 50
+                            },
+                            "attributes": {
+                                "type": "object",
+                                "properties": {
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 128
+                                    }
+                                },
+                                "required": ["password"]
+                            },
                         },
                         "required": ["type", "id"],
                         "additionalProperties": False

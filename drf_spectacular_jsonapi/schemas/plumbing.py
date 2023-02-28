@@ -1,12 +1,11 @@
-from warnings import warn
-
 from django.utils.translation import gettext_lazy as _
 from rest_framework.fields import empty
-from rest_framework.serializers import ModelSerializer
 from rest_framework_json_api import serializers
 from rest_framework_json_api.utils import (format_field_name,
                                            get_related_resource_type,
                                            get_resource_type_from_serializer)
+
+from drf_spectacular_jsonapi.schemas.utils import get_primary_key_of_serializer
 
 
 def build_json_api_relationship_object(field):
@@ -50,17 +49,6 @@ def build_json_api_data_frame(schema):
         },
         "required": ["data"]
     }
-
-
-def get_primary_key_of_serializer(serializer) -> str | None:
-
-    if issubclass(serializer.__class__, ModelSerializer):
-        model = getattr(serializer.Meta, 'model')
-        try:
-            return next(field for field in serializer.fields.values() if field.source == model._meta.pk.name).field_name
-        except StopIteration:
-            pass
-    warn(message="Can't resolve primary key for non model serializers.")
 
 
 def build_json_api_resource_object(schema, serializer, method):
