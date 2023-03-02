@@ -8,7 +8,7 @@ from .models import Album, Song, User
 __all__ = [
     "SongSerializer",
     "AlbumSerializer",
-    "LoginSerializer",
+    "SessionCreateSerializer",
     "UserSerializer"
 ]
 
@@ -53,7 +53,7 @@ class PasswordField(CharField):
         super().__init__(*args, **kwargs)
 
 
-class LoginSerializer(Serializer):
+class SessionCreateSerializer(Serializer):
     """Simple non model serializer"""
     username = CharField(
         label=_("username"),
@@ -63,7 +63,7 @@ class LoginSerializer(Serializer):
     )
 
     class Meta:
-        resource_name = 'Login'
+        resource_name = 'SessionCreate'
 
 
 class UserSerializer(ModelSerializer):

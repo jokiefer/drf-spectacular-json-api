@@ -1,8 +1,6 @@
-from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import (AlbumModelViewset, LoginRequestView, SongModelViewset,
-                    UserModelViewset)
+from .views import AlbumModelViewset, SongModelViewset, UserModelViewset
 
 router = SimpleRouter()
 
@@ -14,6 +12,3 @@ router = SimpleRouter()
 )
 
 urlpatterns = router.urls
-urlpatterns.extend([
-    path('login/', LoginRequestView.as_view(), name='login'),
-])

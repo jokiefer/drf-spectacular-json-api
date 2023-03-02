@@ -2,7 +2,7 @@ from django.test.testcases import SimpleTestCase
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 
-from .urls import router
+from .urls import urlpatterns
 
 
 class SimpleSchemaTestCase(SimpleTestCase):
@@ -17,7 +17,7 @@ class SimpleSchemaTestCase(SimpleTestCase):
             return obj
 
     def setUp(self) -> None:
-        generator = SchemaGenerator(patterns=router.urls)
+        generator = SchemaGenerator()
         self.schema = generator.get_schema(request=None, public=True)
         # make sure generated schemas are always valid
         validate_schema(self.schema)
