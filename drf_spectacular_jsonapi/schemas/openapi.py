@@ -11,6 +11,7 @@ from rest_framework_json_api.utils import (format_field_name,
 
 from drf_spectacular_jsonapi.schemas.plumbing import (
     build_json_api_data_frame, build_json_api_resource_object)
+from drf_spectacular_jsonapi.schemas.utils import get_primary_key_of_serializer
 
 
 class JsonApiAutoSchema(AutoSchema):
@@ -175,7 +176,8 @@ class JsonApiAutoSchema(AutoSchema):
                 description=_(
                     "endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter."),
             )
-            for field in serializer.fields.values():
+            # collect sparrse fieldset and exclude the json:api id field from this lookup
+            for field in list(filter(lambda field: (field.field_name != get_primary_key_of_serializer(serializer)), serializer.fields.values())):
                 fields_parameters[parameter_name, "query"]["schema"]["items"]["enum"].append(
                     format_field_name(field.field_name))
         # TODO: sparse fieldset values for included serializers are also needed

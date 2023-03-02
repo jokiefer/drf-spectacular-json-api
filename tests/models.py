@@ -37,3 +37,9 @@ class Song(Model):
         related_query_name="single",
         on_delete=CASCADE
     )
+
+
+class User(Model):
+
+    username = CharField(max_length=50, primary_key=True)
+    password = CharField(max_length=128)

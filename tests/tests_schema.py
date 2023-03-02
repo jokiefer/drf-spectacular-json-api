@@ -1,11 +1,11 @@
 from django.test.testcases import SimpleTestCase
+from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 
-from .views import AlbumModelViewset
+from .urls import urlpatterns
 
 
-class TestSchemaOutput(SimpleTestCase):
-
+class SimpleSchemaTestCase(SimpleTestCase):
     def ordered(self, obj):
         # don't know why, but enum values are generated in different order in different runs
         # so we order them before comparing them to get reproduceable tests
@@ -16,31 +16,14 @@ class TestSchemaOutput(SimpleTestCase):
         else:
             return obj
 
-    def generate_schema(self, route, viewset=None, view=None, view_function=None, patterns=None):
-        from django.urls import path
-        from drf_spectacular.generators import SchemaGenerator
-        from rest_framework import routers
-        from rest_framework.viewsets import ViewSetMixin
-
-        if viewset:
-            assert issubclass(viewset, ViewSetMixin)
-            router = routers.SimpleRouter()
-            router.register(route, viewset, basename=route)
-            patterns = router.urls
-        elif view:
-            patterns = [path(route, view.as_view())]
-        elif view_function:
-            patterns = [path(route, view_function)]
-        else:
-            assert route is None and isinstance(patterns, list)
-
-        generator = SchemaGenerator(patterns=patterns)
-        schema = generator.get_schema(request=None, public=True)
-        validate_schema(schema)  # make sure generated schemas are always valid
-        return schema
-
     def setUp(self) -> None:
-        self.schema = self.generate_schema('albums', AlbumModelViewset)
+        generator = SchemaGenerator()
+        self.schema = generator.get_schema(request=None, public=True)
+        # make sure generated schemas are always valid
+        validate_schema(self.schema)
+
+
+class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
 
     def test_get_parameters(self):
         """Tests if the queryparameters are valid"""
@@ -50,7 +33,7 @@ class TestSchemaOutput(SimpleTestCase):
             {
                 'in': 'query',
                 'name': 'fields[Album]',
-                'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['id', 'songs', 'title', 'genre', 'year', 'released']}},
+                'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['songs', 'title', 'genre', 'year', 'released']}},
                 'description': 'endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter.',
                 'explode': False
             },
@@ -285,6 +268,57 @@ class TestSchemaOutput(SimpleTestCase):
                                     }
                                 }
                             }
+                        },
+                        "required": ["type", "id"],
+                        "additionalProperties": False
+                    }
+                },
+                "required": ["data"],
+            }
+        )
+        self.assertEqual(expected, calculated)
+
+
+class TestSchemaOutputForDifferentIdFieldName(SimpleSchemaTestCase):
+
+    def test_patch_request_body(self):
+        """Tests if the request body matches the json:api payload schema"""
+        self.assertEqual(
+
+            self.schema["paths"]["/users/{username}/"]["patch"]["requestBody"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/PatchedUserRequest"
+        )
+
+        calculated = self.ordered(
+            self.schema["components"]["schemas"]["PatchedUserRequest"])
+        expected = self.ordered(
+            {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                "enum": ["User"]
+                            },
+                            "id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 50
+                            },
+                            "attributes": {
+                                "type": "object",
+                                "properties": {
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 128
+                                    }
+                                },
+                                "required": ["password"]
+                            },
                         },
                         "required": ["type", "id"],
                         "additionalProperties": False
