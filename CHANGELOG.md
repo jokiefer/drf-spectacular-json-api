@@ -13,7 +13,7 @@ any parts of the framework not mentioned in the documentation should generally b
 ## Fixed
 
 - removes id from the sparse fieldset query parameters.
-- lookup of id field is solved by analyzing the model and then getting the field_name of the detected pk name. If no primary key could be detectet, the arbitrary-type is used as schema for the id field.
+- lookup of id field is solved by analyzing the model and then getting the serializer field_name of the detected pk name to resolve the id schema. If no primary key could be detectet, the arbitrary-type is used as schema for the id field.
 
 ## [0.1.0] - 2023-02-23
 
