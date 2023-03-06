@@ -9,8 +9,8 @@ from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
                                            get_resource_type_from_serializer)
 
-from drf_spectacular_jsonapi.schemas.plumbing import (
-    build_json_api_data_frame, build_json_api_resource_object)
+from drf_spectacular_jsonapi.schemas.converters import JsonApiResourceObject
+from drf_spectacular_jsonapi.schemas.plumbing import build_json_api_data_frame
 from drf_spectacular_jsonapi.schemas.utils import get_primary_key_of_serializer
 
 
@@ -21,6 +21,11 @@ class JsonApiAutoSchema(AutoSchema):
 
     #: ignore all the media types and only generate a JSON:API schema.
     content_types = ["application/vnd.api+json"]
+
+    json_api_resource_object_converter_class = JsonApiResourceObject
+
+    def get_json_api_resource_object_converter_class(self):
+        return self.json_api_resource_object_converter_class
 
     def get_operation(self, path, path_regex, path_prefix, method, registry):
         return super().get_operation(path, path_regex, path_prefix, method, registry)
@@ -196,9 +201,13 @@ class JsonApiAutoSchema(AutoSchema):
     def _map_basic_serializer(self, serializer, direction):
         object_schema = super()._map_basic_serializer(
             serializer=serializer, direction=direction)
-        json_api_object_schema = build_json_api_resource_object(
-            object_schema, serializer, method=self.method)
-        return json_api_object_schema
+
+        json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
+            serializer=serializer,
+            drf_spectactular_schema=object_schema,
+            method=self.method
+        ).__dict__()
+        return json_api_resource_object_schema
 
     def _postprocess_serializer_schema(self, schema, serializer, direction):
         if is_serializer(serializer):

@@ -17,8 +17,11 @@ class SimpleSchemaTestCase(SimpleTestCase):
             return obj
 
     def setUp(self) -> None:
+        self.maxDiff = None
         generator = SchemaGenerator()
         self.schema = generator.get_schema(request=None, public=True)
+        print(self.schema)
+
         # make sure generated schemas are always valid
         validate_schema(self.schema)
 
@@ -92,7 +95,8 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
 
     def test_post_request_body(self):
         """Tests if the request body matches the json:api payload schema"""
-
+        print()
+        print(self.schema)
         self.assertEqual(
             self.schema["paths"]["/albums/"]["post"]["requestBody"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
             "#/components/schemas/AlbumRequest"
@@ -117,24 +121,27 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                 "properties": {
                                     "title": {
                                         "type": "string",
+                                        "title": "Title",
                                         "description": "The title of the Album",
-                                        # TODO: "title": "Title"
                                         "maxLength": 100,
                                         "minLength": 1,
                                     },
                                     "genre": {
                                         "type": "string",
                                         "enum": ["POP", "ROCK"],
+                                        "title": "Genre",
                                         "description": "Wich kind of genre this Album represents"
                                     },
                                     "year": {
                                         "type": "integer",
                                         "maximum": 2147483647,
                                         "minimum": -2147483648,
+                                        "title": "Year",
                                         "description": "The release year"
                                     },
                                     "released": {
                                         "type": "boolean",
+                                        "title": "Released",
                                         "description": "Is this Album released or not?"
                                     }
                                 },
@@ -163,12 +170,12 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                         }
                                                     },
                                                     "required": ["id", "type"],
-                                                    "description": "The songs which are part of this album.",
-                                                    # TODO: "title": "Songs"
                                                 },
                                             }
                                         },
-                                        "required": ["data"]
+                                        "required": ["data"],
+                                        "title": "Songs",
+                                        "description": "The songs which are part of this album.",
                                     }
                                 }
                             }
@@ -213,6 +220,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                 "properties": {
                                     "title": {
                                         "type": "string",
+                                        "title": "Title",
                                         "description": "The title of the Album",
                                         # TODO: "title": "Title"
                                         "maxLength": 100,
@@ -221,16 +229,19 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                     "genre": {
                                         "type": "string",
                                         "enum": ["POP", "ROCK"],
+                                        "title": "Genre",
                                         "description": "Wich kind of genre this Album represents"
                                     },
                                     "year": {
                                         "type": "integer",
                                         "maximum": 2147483647,
                                         "minimum": -2147483648,
+                                        "title": "Year",
                                         "description": "The release year"
                                     },
                                     "released": {
                                         "type": "boolean",
+                                        "title": "Released",
                                         "description": "Is this Album released or not?"
                                     }
                                 },
@@ -264,7 +275,8 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                 },
                                             }
                                         },
-                                        "required": ["data"]
+                                        "required": ["data"],
+                                        "title": "Songs"
                                     }
                                 }
                             }
