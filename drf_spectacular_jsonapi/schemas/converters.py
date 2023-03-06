@@ -70,7 +70,7 @@ class JsonApiRelationshipObject:
         return _("Resource Type Name")
 
     def get_type_description(self):
-        return _("The type member is used to describe resource objects that share common attributes and relationships.")
+        return _("The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.")
 
     def patch_type_metadata(self):
         self._schema["properties"].update({"id": {

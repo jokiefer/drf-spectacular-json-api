@@ -13,17 +13,20 @@ class SimpleSchemaTestCase(SimpleTestCase):
             return sorted((k, self.ordered(v)) for k, v in obj.items())
         if isinstance(obj, list):
             return sorted(self.ordered(x) for x in obj)
-        else:
-            return obj
+        if isinstance(obj, str):
+            obj.replace("\n", "")
+        return obj
 
     def setUp(self) -> None:
         self.maxDiff = None
         generator = SchemaGenerator()
         self.schema = generator.get_schema(request=None, public=True)
-        print(self.schema)
-
         # make sure generated schemas are always valid
         validate_schema(self.schema)
+
+        print("")
+        print(self.schema)
+        print("")
 
 
 class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
@@ -160,12 +163,12 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                     "properties": {
                                                         "id": {
                                                             "type": "string",
-                                                            # TODO: the format of the id
+                                                            "format": "uuid",
                                                             "description": "The identifier of the related object."
                                                         },
                                                         "type": {
                                                             "type": "string",
-                                                            "description": "",
+                                                            "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
                                                             "enum": ["Song"]
                                                         }
                                                     },
@@ -222,7 +225,6 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                         "type": "string",
                                         "title": "Title",
                                         "description": "The title of the Album",
-                                        # TODO: "title": "Title"
                                         "maxLength": 100,
                                         "minLength": 1,
                                     },
@@ -260,18 +262,17 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                     "properties": {
                                                         "id": {
                                                             "type": "string",
-                                                            # TODO: the format of the id
+                                                            "format": "uuid",
                                                             "description": "The identifier of the related object."
                                                         },
                                                         "type": {
                                                             "type": "string",
-                                                            "description": "",
+                                                            "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
                                                             "enum": ["Song"]
                                                         }
                                                     },
                                                     "required": ["id", "type"],
                                                     "description": "The songs which are part of this album.",
-                                                    # TODO: "title": "Songs"
                                                 },
                                             }
                                         },
