@@ -124,7 +124,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                 "properties": {
                                     "title": {
                                         "type": "string",
-                                        "title": "Title",
+                                        "title": "Nice Title",
                                         "description": "The title of the Album",
                                         "maxLength": 100,
                                         "minLength": 1,
@@ -132,19 +132,19 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                     "genre": {
                                         "type": "string",
                                         "enum": ["POP", "ROCK"],
-                                        "title": "Genre",
+                                        "title": "Nice Genre",
                                         "description": "Wich kind of genre this Album represents"
                                     },
                                     "year": {
                                         "type": "integer",
                                         "maximum": 2147483647,
                                         "minimum": -2147483648,
-                                        "title": "Year",
+                                        "title": "Nice Year",
                                         "description": "The release year"
                                     },
                                     "released": {
                                         "type": "boolean",
-                                        "title": "Released",
+                                        "title": "Nice Released",
                                         "description": "Is this Album released or not?"
                                     }
                                 },
@@ -169,7 +169,8 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                         "type": {
                                                             "type": "string",
                                                             "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
-                                                            "enum": ["Song"]
+                                                            "enum": ["Song"],
+                                                            "title": "Resource Type Name"
                                                         }
                                                     },
                                                     "required": ["id", "type"],
@@ -223,7 +224,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                 "properties": {
                                     "title": {
                                         "type": "string",
-                                        "title": "Title",
+                                        "title": "Nice Title",
                                         "description": "The title of the Album",
                                         "maxLength": 100,
                                         "minLength": 1,
@@ -231,19 +232,19 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                     "genre": {
                                         "type": "string",
                                         "enum": ["POP", "ROCK"],
-                                        "title": "Genre",
+                                        "title": "Nice Genre",
                                         "description": "Wich kind of genre this Album represents"
                                     },
                                     "year": {
                                         "type": "integer",
                                         "maximum": 2147483647,
                                         "minimum": -2147483648,
-                                        "title": "Year",
+                                        "title": "Nice Year",
                                         "description": "The release year"
                                     },
                                     "released": {
                                         "type": "boolean",
-                                        "title": "Released",
+                                        "title": "Nice Released",
                                         "description": "Is this Album released or not?"
                                     }
                                 },
@@ -268,16 +269,18 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                         "type": {
                                                             "type": "string",
                                                             "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
-                                                            "enum": ["Song"]
+                                                            "enum": ["Song"],
+                                                            "title": "Resource Type Name"
                                                         }
                                                     },
                                                     "required": ["id", "type"],
-                                                    "description": "The songs which are part of this album.",
                                                 },
                                             }
                                         },
                                         "required": ["data"],
-                                        "title": "Songs"
+                                        "title": "Songs",
+                                        "description": "The songs which are part of this album.",
+
                                     }
                                 }
                             }

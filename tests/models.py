@@ -11,25 +11,40 @@ __all__ = [
 
 
 class Album(Model):
-    id = UUIDField(primary_key=True, default=uuid4, editable=False)
-    title = CharField(max_length=100, verbose_name=_(
-        "Title"), help_text=_("The title of the Album"))
+    id = UUIDField(
+        primary_key=True,
+        default=uuid4,
+        editable=False
+    )
+    title = CharField(
+        max_length=100,
+        # drf_spectacular ignores trivial title variations
+        verbose_name=_("Nice Title"),
+        help_text=_("The title of the Album"))
     genre = CharField(
         choices=(('POP', 'Pop'), ('ROCK', 'Rock')),
         max_length=10,
-        verbose_name=_("Genre"),
+        # drf_spectacular ignores trivial title variations
+        verbose_name=_("Nice Genre"),
         help_text=_("Wich kind of genre this Album represents")
     )
-    year = IntegerField(verbose_name=_("Year"),
-                        help_text=_("The release year"))
-    released = BooleanField(verbose_name=_("Released"),
-                            help_text=_("Is this Album released or not?"))
+    year = IntegerField(
+        verbose_name=_("Nice Year"),
+        help_text=_("The release year"))
+    released = BooleanField(
+        verbose_name=_("Nice Released"),
+        help_text=_("Is this Album released or not?")
+    )
 
 
 class Song(Model):
-    id = UUIDField(primary_key=True, default=uuid4, editable=False)
-
-    title = CharField(max_length=100)
+    id = UUIDField(
+        primary_key=True,
+        default=uuid4,
+        editable=False)
+    title = CharField(
+        max_length=100
+    )
     length = IntegerField()
     album = ForeignKey(
         to=Album,

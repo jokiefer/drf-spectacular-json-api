@@ -2,8 +2,8 @@ from typing import Dict, List, Tuple
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.openapi import AutoSchema
-from drf_spectacular.plumbing import (build_array_type, build_basic_type,
-                                      build_parameter_type, is_serializer)
+from drf_spectacular.plumbing import (build_array_type, build_parameter_type,
+                                      is_serializer)
 from rest_framework_json_api.serializers import SparseFieldsetsMixin
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
@@ -124,30 +124,6 @@ class JsonApiAutoSchema(AutoSchema):
         # TODO: add a setting wich allows to configure the behaviour?
         return [get_resource_name(context={"view": self.view})]
 
-    def _patch_property_names(self, schema) -> None:
-        properties = schema.get("properties", {})
-        patched_properties = {}
-        for name, field_schema in properties.items():
-            json_api_field_name = format_field_name(name)
-            patched_properties.update({json_api_field_name: field_schema})
-        if properties:
-            schema["properties"] = patched_properties
-
-    def _patch_required_names(self, schema) -> None:
-        required = schema.get("required", [])
-        patched_required = []
-        for field_name in required:
-            patched_required.append(format_field_name(field_name))
-        if required:
-            schema["required"] = patched_required
-
-    def _map_basic_serializer(self, serializer, direction):
-        """Update field names to match the configured field name formatting configured by the `JSON_API_FORMAT_FIELD_NAMES` setting"""
-        schema = super()._map_basic_serializer(serializer, direction)
-        self._patch_property_names(schema=schema)
-        self._patch_required_names(schema=schema)
-        return schema
-
     def get_include_parameter(self):
         include_parameter = {}
         include_enum = []
@@ -199,9 +175,12 @@ class JsonApiAutoSchema(AutoSchema):
         return result
 
     def _map_basic_serializer(self, serializer, direction):
+        # let drf_spectacular do the default drf_spectacular stuff first.
+        # It is an performace leak, but for now the only handy way without copy paste all the drf_spectacular code.
         object_schema = super()._map_basic_serializer(
             serializer=serializer, direction=direction)
 
+        # second step; convert the schema to an json:api resource object schema
         json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
             serializer=serializer,
             drf_spectactular_schema=object_schema,
