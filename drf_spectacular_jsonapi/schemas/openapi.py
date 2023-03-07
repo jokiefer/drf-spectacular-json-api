@@ -192,27 +192,41 @@ class JsonApiAutoSchema(AutoSchema):
     # def _get_response_for_code(self, serializer, status_code, media_types=None, direction='response'):
     #     response = super()._get_response_for_code(serializer=serializer,
     #                                               status_code=status_code, media_types=media_types, direction=direction)
-    #     if "application/vnd.api+json" in response["content"]:
+    #     # if "application/vnd.api+json" in response["content"]:
 
-    #         component_ref = response["content"]["application/vnd.api+json"]["schema"]["$ref"]
+    #     #     component_ref = response["content"]["application/vnd.api+json"]["schema"]["$ref"]
 
-    #         response_schema = build_json_api_data_frame(
-    #             schema={"$ref": component_ref})
+    #     #     response_schema = build_json_api_data_frame(
+    #     #         schema={"$ref": component_ref})
 
-    #         response["content"]["application/vnd.api+json"]["schema"] = response_schema
+    #     #     response["content"]["application/vnd.api+json"]["schema"] = response_schema
 
     #     return response
 
-    # def _postprocess_serializer_schema(self, schema, serializer, direction):
-    #     schema = super()._postprocess_serializer_schema(schema, serializer, direction)
+    def _postprocess_serializer_schema(self, schema, serializer, direction):
+        schema = super()._postprocess_serializer_schema(schema, serializer, direction)
 
-    #     # json:api data frame is always needed in cases:
-    #     # Case 1: GET Response Body
-    #     # Case 2: POST Request Body
-    #     # Case 3: POST Response Body
-    #     # Case 4: PATCH Request Body
-    #     # Case 5: PATCH Response Body
+        if self.method == "GET" and direction == "response":
+            # list responses shall not be framed
+            pass
+        else:
+            schema = build_json_api_data_frame(schema)
+        return schema
 
-    #     if is_serializer(serializer) or is_list_serializer(serializer):
-    #         schema = build_json_api_data_frame(schema)
-    #     return schema
+    def _get_response_for_code(self, serializer, status_code, media_types=None, direction='response'):
+        response = super()._get_response_for_code(
+            serializer, status_code, media_types, direction)
+
+        if "application/vnd.api+json" in response["content"] and "Paginated" not in response["content"]["application/vnd.api+json"]["schema"]["$ref"]:
+            response_component = ResolvedComponent(
+                name=self._get_serializer_name(
+                    serializer=serializer, direction=direction)+"Response",
+                type=ResolvedComponent.SCHEMA,
+                schema=build_json_api_data_frame(
+                    response["content"]["application/vnd.api+json"]["schema"]),
+                object=serializer.child if is_list_serializer(
+                    serializer) else serializer
+            )
+            self.registry.register_on_missing(response_component)
+            response["content"]["application/vnd.api+json"]["schema"] = response_component.ref
+        return response
