@@ -92,9 +92,10 @@ class JsonApiRelationshipObject:
                 "type": "array",
                 "items": self._schema
             }
-        self.patch_root_metadata()
 
         self._schema = build_json_api_data_frame(self._schema)
+
+        self.patch_root_metadata()
 
     def __dict__(self):
         return self._schema

@@ -164,6 +164,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                         "id": {
                                                             "type": "string",
                                                             "format": "uuid",
+                                                            "title": "Resource Identifier",
                                                             "description": "The identifier of the related object."
                                                         },
                                                         "type": {
@@ -178,7 +179,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                             }
                                         },
                                         "required": ["data"],
-                                        "title": "Songs",
+                                        "title": "Nice Songs",
                                         "description": "The songs which are part of this album.",
                                     }
                                 }
@@ -264,6 +265,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                         "id": {
                                                             "type": "string",
                                                             "format": "uuid",
+                                                            "title": "Resource Identifier",
                                                             "description": "The identifier of the related object."
                                                         },
                                                         "type": {
@@ -275,12 +277,11 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                     },
                                                     "required": ["id", "type"],
                                                 },
-                                            }
+                                            },
                                         },
                                         "required": ["data"],
-                                        "title": "Songs",
+                                        "title": "Nice Songs",
                                         "description": "The songs which are part of this album.",
-
                                     }
                                 }
                             }
