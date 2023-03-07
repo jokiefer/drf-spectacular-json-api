@@ -24,12 +24,15 @@ class SimpleSchemaTestCase(SimpleTestCase):
         # make sure generated schemas are always valid
         validate_schema(self.schema)
 
-        print("")
-        print(self.schema)
-        print("")
-
 
 class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
+
+    def test_get_response_body(self):
+        print(self.schema)
+        self.assertEqual(
+            self.schema["paths"]["/albums/"]["get"]["responses"]["200"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/PaginatedAlbumList"
+        )
 
     def test_get_parameters(self):
         """Tests if the queryparameters are valid"""
@@ -98,8 +101,6 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
 
     def test_post_request_body(self):
         """Tests if the request body matches the json:api payload schema"""
-        print()
-        print(self.schema)
         self.assertEqual(
             self.schema["paths"]["/albums/"]["post"]["requestBody"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
             "#/components/schemas/AlbumRequest"

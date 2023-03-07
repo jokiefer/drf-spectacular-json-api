@@ -1,7 +1,7 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework.fields import CharField
 from rest_framework_json_api.relations import ResourceRelatedField
-from rest_framework_json_api.serializers import ModelSerializer, Serializer
+from rest_framework_json_api.serializers import ModelSerializer
 
 from .models import Album, Song, User
 

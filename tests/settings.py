@@ -16,6 +16,9 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
     ),
     "SEARCH_PARAM": "filter[search]",
+    "DEFAULT_RENDERER_CLASSES": (
+        "rest_framework_json_api.renderers.JSONRenderer",
+    )
 
 }
 
