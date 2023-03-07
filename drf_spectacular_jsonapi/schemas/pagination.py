@@ -4,6 +4,7 @@ from rest_framework_json_api.pagination import JsonApiPageNumberPagination
 class JsonApiPageNumberPagination(JsonApiPageNumberPagination):
 
     def get_paginated_response_schema(self, schema):
+
         return {
             'type': 'object',
             'properties': {
@@ -26,10 +27,7 @@ class JsonApiPageNumberPagination(JsonApiPageNumberPagination):
                 #     'example': 'http://api.example.org/accounts/?{page_query_param}=2'.format(
                 #         page_query_param=self.page_query_param)
                 # },
-                'data': {
-                    "type": "array",
-                    "items": schema
-                },
+                'data': schema,
             },
             "required": ["data"]
         }
