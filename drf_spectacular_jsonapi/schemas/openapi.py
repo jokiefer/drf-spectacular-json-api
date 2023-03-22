@@ -3,8 +3,7 @@ from typing import Dict, List, Tuple
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.plumbing import (ResolvedComponent, build_array_type,
-                                      build_parameter_type, is_list_serializer,
-                                      is_serializer)
+                                      build_parameter_type, is_list_serializer)
 from rest_framework_json_api.serializers import SparseFieldsetsMixin
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
@@ -188,20 +187,6 @@ class JsonApiAutoSchema(AutoSchema):
             method=self.method,
         ).__dict__()
         return json_api_resource_object_schema
-
-    # def _get_response_for_code(self, serializer, status_code, media_types=None, direction='response'):
-    #     response = super()._get_response_for_code(serializer=serializer,
-    #                                               status_code=status_code, media_types=media_types, direction=direction)
-    #     # if "application/vnd.api+json" in response["content"]:
-
-    #     #     component_ref = response["content"]["application/vnd.api+json"]["schema"]["$ref"]
-
-    #     #     response_schema = build_json_api_data_frame(
-    #     #         schema={"$ref": component_ref})
-
-    #     #     response["content"]["application/vnd.api+json"]["schema"] = response_schema
-
-    #     return response
 
     def _postprocess_serializer_schema(self, schema, serializer, direction):
         schema = super()._postprocess_serializer_schema(schema, serializer, direction)

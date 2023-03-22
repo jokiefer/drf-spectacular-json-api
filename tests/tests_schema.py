@@ -2,10 +2,9 @@ from django.test.testcases import SimpleTestCase
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 
-from .urls import urlpatterns
-
 
 class SimpleSchemaTestCase(SimpleTestCase):
+
     def ordered(self, obj):
         # don't know why, but enum values are generated in different order in different runs
         # so we order them before comparing them to get reproduceable tests
@@ -27,100 +26,101 @@ class SimpleSchemaTestCase(SimpleTestCase):
 
 class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
 
-    def test_get_response_body(self):
-        print(self.schema)
-        self.assertEqual(
-            self.schema["paths"]["/albums/"]["get"]["responses"]["200"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
-            "#/components/schemas/PaginatedAlbumList"
-        )
+    def test_component_basic_schema(self):
         calculated = self.ordered(
-            self.schema["components"]["schemas"]["PaginatedAlbumList"])
+            self.schema["components"]["schemas"]["Album"])
         expected = self.ordered(
             {
                 "type": "object",
                 "properties": {
-                    "data": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "type": {
-                                    "type": "string",
-                                    "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
-                                    "enum": ["Album"]
-                                },
-                                "attributes": {
-                                    "type": "object",
-                                    "properties": {
-                                        "title": {
-                                            "type": "string",
-                                            "title": "Nice Title",
-                                            "description": "The title of the Album",
-                                            "maxLength": 100,
-                                            "minLength": 1,
-                                        },
-                                        "genre": {
-                                            "type": "string",
-                                            "enum": ["POP", "ROCK"],
-                                            "title": "Nice Genre",
-                                            "description": "Wich kind of genre this Album represents"
-                                        },
-                                        "year": {
-                                            "type": "integer",
-                                            "maximum": 2147483647,
-                                            "minimum": -2147483648,
-                                            "title": "Nice Year",
-                                            "description": "The release year"
-                                        },
-                                        "released": {
-                                            "type": "boolean",
-                                            "title": "Nice Released",
-                                            "description": "Is this Album released or not?"
-                                        }
-                                    },
-                                },
-                                "relationships": {
-                                    "type": "object",
-                                    "properties": {
-                                        "songs": {
+                    "type": {
+                        "allOf": [{"$ref": "#/components/schemas/AlbumTypeEnum"},],
+                        "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "title": "Nice Title",
+                                "description": "The title of the Album",
+                                "maxLength": 100,
+                            },
+                            "genre": {
+                                "type": "string",
+                                "enum": ["POP", "ROCK"],
+                                "title": "Nice Genre",
+                                "description": "Wich kind of genre this Album represents"
+                            },
+                            "year": {
+                                "type": "integer",
+                                "maximum": 2147483647,
+                                "minimum": -2147483648,
+                                "title": "Nice Year",
+                                "description": "The release year"
+                            },
+                            "released": {
+                                "type": "boolean",
+                                "title": "Nice Released",
+                                "description": "Is this Album released or not?"
+                            }
+                        },
+                        "required": ["title", "genre", "year", "released"],
+                    },
+                    "relationships": {
+                        "type": "object",
+                        "properties": {
+                            "songs": {
+                                "type": "object",
+                                "properties": {
+                                    "data": {
+                                        "type": "array",
+                                        "items": {
                                             "type": "object",
                                             "properties": {
-                                                "data": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "id": {
-                                                                "type": "string",
-                                                                "format": "uuid",
-                                                                "title": "Resource Identifier",
-                                                                "description": "The identifier of the related object."
-                                                            },
-                                                            "type": {
-                                                                "type": "string",
-                                                                "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
-                                                                "enum": ["Song"],
-                                                                "title": "Resource Type Name"
-                                                            }
-                                                        },
-                                                        "required": ["id", "type"],
-                                                    },
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "title": "Resource Identifier",
+                                                    "description": "The identifier of the related object."
+                                                },
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                                    "enum": ["Song"],
+                                                    "title": "Resource Type Name"
                                                 }
                                             },
-                                            "required": ["data"],
-                                            "title": "Nice Songs",
-                                            "description": "The songs which are part of this album.",
-                                        }
+                                            "required": ["id", "type"],
+                                        },
                                     }
-                                }
+                                },
+                                "required": ["data"],
+                                "title": "Nice Songs",
+                                "description": "The songs which are part of this album.",
                             }
                         }
                     }
                 },
-                "required": ["data"],
+                "additionalProperties": False,
+                "required": ["id", "type"],
             }
         )
         self.assertEqual(expected, calculated)
+
+    def test_get_response_body(self):
+        self.assertEqual(
+            self.schema["paths"]["/albums/"]["get"]["responses"]["200"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/PaginatedAlbumList"
+        )
+        self.assertEqual(
+            self.schema["components"]["schemas"]["PaginatedAlbumList"]["properties"]["data"]["items"]["$ref"],
+            "#/components/schemas/Album"
+        )
 
     def test_get_parameters(self):
         """Tests if the queryparameters are valid"""
