@@ -1,14 +1,13 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework.fields import CharField
 from rest_framework_json_api.relations import ResourceRelatedField
-from rest_framework_json_api.serializers import ModelSerializer, Serializer
+from rest_framework_json_api.serializers import ModelSerializer
 
 from .models import Album, Song, User
 
 __all__ = [
     "SongSerializer",
     "AlbumSerializer",
-    "SessionCreateSerializer",
     "UserSerializer"
 ]
 
@@ -27,7 +26,7 @@ class AlbumSerializer(ModelSerializer):
     songs = ResourceRelatedField(
         queryset=Song.objects,
         many=True,
-        label=_("Songs"),
+        label=_("Nice Songs"),
         help_text=_(
             "The songs which are part of this album."),
     )
@@ -51,19 +50,6 @@ class PasswordField(CharField):
         kwargs['write_only'] = True
 
         super().__init__(*args, **kwargs)
-
-
-class SessionCreateSerializer(Serializer):
-    """Simple non model serializer"""
-    username = CharField(
-        label=_("username"),
-    )
-    password = PasswordField(
-        label=_("password"),
-    )
-
-    class Meta:
-        resource_name = 'SessionCreate'
 
 
 class UserSerializer(ModelSerializer):

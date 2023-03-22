@@ -1,11 +1,7 @@
-from django.contrib.auth import login
-from rest_framework.generics import CreateAPIView
-from rest_framework.response import Response
 from rest_framework_json_api.views import ModelViewSet
 
 from .models import Album, Song, User
-from .serializers import (AlbumSerializer, SessionCreateSerializer,
-                          SongSerializer, UserSerializer)
+from .serializers import AlbumSerializer, SongSerializer, UserSerializer
 
 
 class AlbumModelViewset(ModelViewSet):

@@ -2,10 +2,9 @@ from django.test.testcases import SimpleTestCase
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 
-from .urls import urlpatterns
-
 
 class SimpleSchemaTestCase(SimpleTestCase):
+
     def ordered(self, obj):
         # don't know why, but enum values are generated in different order in different runs
         # so we order them before comparing them to get reproduceable tests
@@ -13,10 +12,12 @@ class SimpleSchemaTestCase(SimpleTestCase):
             return sorted((k, self.ordered(v)) for k, v in obj.items())
         if isinstance(obj, list):
             return sorted(self.ordered(x) for x in obj)
-        else:
-            return obj
+        if isinstance(obj, str):
+            obj.replace("\n", "")
+        return obj
 
     def setUp(self) -> None:
+        self.maxDiff = None
         generator = SchemaGenerator()
         self.schema = generator.get_schema(request=None, public=True)
         # make sure generated schemas are always valid
@@ -24,6 +25,102 @@ class SimpleSchemaTestCase(SimpleTestCase):
 
 
 class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
+
+    def test_component_basic_schema(self):
+        calculated = self.ordered(
+            self.schema["components"]["schemas"]["Album"])
+        expected = self.ordered(
+            {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "allOf": [{"$ref": "#/components/schemas/AlbumTypeEnum"},],
+                        "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "title": "Nice Title",
+                                "description": "The title of the Album",
+                                "maxLength": 100,
+                            },
+                            "genre": {
+                                "type": "string",
+                                "enum": ["POP", "ROCK"],
+                                "title": "Nice Genre",
+                                "description": "Wich kind of genre this Album represents"
+                            },
+                            "year": {
+                                "type": "integer",
+                                "maximum": 2147483647,
+                                "minimum": -2147483648,
+                                "title": "Nice Year",
+                                "description": "The release year"
+                            },
+                            "released": {
+                                "type": "boolean",
+                                "title": "Nice Released",
+                                "description": "Is this Album released or not?"
+                            }
+                        },
+                        "required": ["title", "genre", "year", "released"],
+                    },
+                    "relationships": {
+                        "type": "object",
+                        "properties": {
+                            "songs": {
+                                "type": "object",
+                                "properties": {
+                                    "data": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "title": "Resource Identifier",
+                                                    "description": "The identifier of the related object."
+                                                },
+                                                "type": {
+                                                    "type": "string",
+                                                    "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                                    "enum": ["Song"],
+                                                    "title": "Resource Type Name"
+                                                }
+                                            },
+                                            "required": ["id", "type"],
+                                        },
+                                    }
+                                },
+                                "required": ["data"],
+                                "title": "Nice Songs",
+                                "description": "The songs which are part of this album.",
+                            }
+                        }
+                    }
+                },
+                "additionalProperties": False,
+                "required": ["id", "type"],
+            }
+        )
+        self.assertEqual(expected, calculated)
+
+    def test_get_response_body(self):
+        self.assertEqual(
+            self.schema["paths"]["/albums/"]["get"]["responses"]["200"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/PaginatedAlbumList"
+        )
+        self.assertEqual(
+            self.schema["components"]["schemas"]["PaginatedAlbumList"]["properties"]["data"]["items"]["$ref"],
+            "#/components/schemas/Album"
+        )
 
     def test_get_parameters(self):
         """Tests if the queryparameters are valid"""
@@ -92,7 +189,6 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
 
     def test_post_request_body(self):
         """Tests if the request body matches the json:api payload schema"""
-
         self.assertEqual(
             self.schema["paths"]["/albums/"]["post"]["requestBody"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
             "#/components/schemas/AlbumRequest"
@@ -117,24 +213,27 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                 "properties": {
                                     "title": {
                                         "type": "string",
+                                        "title": "Nice Title",
                                         "description": "The title of the Album",
-                                        # TODO: "title": "Title"
                                         "maxLength": 100,
                                         "minLength": 1,
                                     },
                                     "genre": {
                                         "type": "string",
                                         "enum": ["POP", "ROCK"],
+                                        "title": "Nice Genre",
                                         "description": "Wich kind of genre this Album represents"
                                     },
                                     "year": {
                                         "type": "integer",
                                         "maximum": 2147483647,
                                         "minimum": -2147483648,
+                                        "title": "Nice Year",
                                         "description": "The release year"
                                     },
                                     "released": {
                                         "type": "boolean",
+                                        "title": "Nice Released",
                                         "description": "Is this Album released or not?"
                                     }
                                 },
@@ -153,22 +252,24 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                     "properties": {
                                                         "id": {
                                                             "type": "string",
-                                                            # TODO: the format of the id
+                                                            "format": "uuid",
+                                                            "title": "Resource Identifier",
                                                             "description": "The identifier of the related object."
                                                         },
                                                         "type": {
                                                             "type": "string",
-                                                            "description": "",
-                                                            "enum": ["Song"]
+                                                            "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                                            "enum": ["Song"],
+                                                            "title": "Resource Type Name"
                                                         }
                                                     },
                                                     "required": ["id", "type"],
-                                                    "description": "The songs which are part of this album.",
-                                                    # TODO: "title": "Songs"
                                                 },
                                             }
                                         },
-                                        "required": ["data"]
+                                        "required": ["data"],
+                                        "title": "Nice Songs",
+                                        "description": "The songs which are part of this album.",
                                     }
                                 }
                             }
@@ -213,24 +314,27 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                 "properties": {
                                     "title": {
                                         "type": "string",
+                                        "title": "Nice Title",
                                         "description": "The title of the Album",
-                                        # TODO: "title": "Title"
                                         "maxLength": 100,
                                         "minLength": 1,
                                     },
                                     "genre": {
                                         "type": "string",
                                         "enum": ["POP", "ROCK"],
+                                        "title": "Nice Genre",
                                         "description": "Wich kind of genre this Album represents"
                                     },
                                     "year": {
                                         "type": "integer",
                                         "maximum": 2147483647,
                                         "minimum": -2147483648,
+                                        "title": "Nice Year",
                                         "description": "The release year"
                                     },
                                     "released": {
                                         "type": "boolean",
+                                        "title": "Nice Released",
                                         "description": "Is this Album released or not?"
                                     }
                                 },
@@ -249,22 +353,24 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                                     "properties": {
                                                         "id": {
                                                             "type": "string",
-                                                            # TODO: the format of the id
+                                                            "format": "uuid",
+                                                            "title": "Resource Identifier",
                                                             "description": "The identifier of the related object."
                                                         },
                                                         "type": {
                                                             "type": "string",
-                                                            "description": "",
-                                                            "enum": ["Song"]
+                                                            "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                                            "enum": ["Song"],
+                                                            "title": "Resource Type Name"
                                                         }
                                                     },
                                                     "required": ["id", "type"],
-                                                    "description": "The songs which are part of this album.",
-                                                    # TODO: "title": "Songs"
                                                 },
-                                            }
+                                            },
                                         },
-                                        "required": ["data"]
+                                        "required": ["data"],
+                                        "title": "Nice Songs",
+                                        "description": "The songs which are part of this album.",
                                     }
                                 }
                             }

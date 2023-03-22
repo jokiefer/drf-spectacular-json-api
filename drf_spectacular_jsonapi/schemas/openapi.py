@@ -2,15 +2,15 @@ from typing import Dict, List, Tuple
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.openapi import AutoSchema
-from drf_spectacular.plumbing import (build_array_type, build_basic_type,
-                                      build_parameter_type, is_serializer)
+from drf_spectacular.plumbing import (ResolvedComponent, build_array_type,
+                                      build_parameter_type, is_list_serializer)
 from rest_framework_json_api.serializers import SparseFieldsetsMixin
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
                                            get_resource_type_from_serializer)
 
-from drf_spectacular_jsonapi.schemas.plumbing import (
-    build_json_api_data_frame, build_json_api_resource_object)
+from drf_spectacular_jsonapi.schemas.converters import JsonApiResourceObject
+from drf_spectacular_jsonapi.schemas.plumbing import build_json_api_data_frame
 from drf_spectacular_jsonapi.schemas.utils import get_primary_key_of_serializer
 
 
@@ -21,6 +21,11 @@ class JsonApiAutoSchema(AutoSchema):
 
     #: ignore all the media types and only generate a JSON:API schema.
     content_types = ["application/vnd.api+json"]
+
+    json_api_resource_object_converter_class = JsonApiResourceObject
+
+    def get_json_api_resource_object_converter_class(self):
+        return self.json_api_resource_object_converter_class
 
     def get_operation(self, path, path_regex, path_prefix, method, registry):
         return super().get_operation(path, path_regex, path_prefix, method, registry)
@@ -119,30 +124,6 @@ class JsonApiAutoSchema(AutoSchema):
         # TODO: add a setting wich allows to configure the behaviour?
         return [get_resource_name(context={"view": self.view})]
 
-    def _patch_property_names(self, schema) -> None:
-        properties = schema.get("properties", {})
-        patched_properties = {}
-        for name, field_schema in properties.items():
-            json_api_field_name = format_field_name(name)
-            patched_properties.update({json_api_field_name: field_schema})
-        if properties:
-            schema["properties"] = patched_properties
-
-    def _patch_required_names(self, schema) -> None:
-        required = schema.get("required", [])
-        patched_required = []
-        for field_name in required:
-            patched_required.append(format_field_name(field_name))
-        if required:
-            schema["required"] = patched_required
-
-    def _map_basic_serializer(self, serializer, direction):
-        """Update field names to match the configured field name formatting configured by the `JSON_API_FORMAT_FIELD_NAMES` setting"""
-        schema = super()._map_basic_serializer(serializer, direction)
-        self._patch_property_names(schema=schema)
-        self._patch_required_names(schema=schema)
-        return schema
-
     def get_include_parameter(self):
         include_parameter = {}
         include_enum = []
@@ -194,13 +175,43 @@ class JsonApiAutoSchema(AutoSchema):
         return result
 
     def _map_basic_serializer(self, serializer, direction):
+        # let drf_spectacular do the default drf_spectacular stuff first.
+        # It is an performace leak, but for now the only handy way without copy paste all the drf_spectacular code.
         object_schema = super()._map_basic_serializer(
             serializer=serializer, direction=direction)
-        json_api_object_schema = build_json_api_resource_object(
-            object_schema, serializer, method=self.method)
-        return json_api_object_schema
+
+        # second step; convert the schema to an json:api resource object schema
+        json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
+            serializer=serializer,
+            drf_spectactular_schema=object_schema,
+            method=self.method,
+        ).__dict__()
+        return json_api_resource_object_schema
 
     def _postprocess_serializer_schema(self, schema, serializer, direction):
-        if is_serializer(serializer):
+        schema = super()._postprocess_serializer_schema(schema, serializer, direction)
+
+        if self.method == "GET" and direction == "response":
+            # list responses shall not be framed
+            pass
+        else:
             schema = build_json_api_data_frame(schema)
-        return super()._postprocess_serializer_schema(schema, serializer, direction)
+        return schema
+
+    def _get_response_for_code(self, serializer, status_code, media_types=None, direction='response'):
+        response = super()._get_response_for_code(
+            serializer, status_code, media_types, direction)
+
+        if "application/vnd.api+json" in response["content"] and "Paginated" not in response["content"]["application/vnd.api+json"]["schema"]["$ref"]:
+            response_component = ResolvedComponent(
+                name=self._get_serializer_name(
+                    serializer=serializer, direction=direction)+"Response",
+                type=ResolvedComponent.SCHEMA,
+                schema=build_json_api_data_frame(
+                    response["content"]["application/vnd.api+json"]["schema"]),
+                object=serializer.child if is_list_serializer(
+                    serializer) else serializer
+            )
+            self.registry.register_on_missing(response_component)
+            response["content"]["application/vnd.api+json"]["schema"] = response_component.ref
+        return response
