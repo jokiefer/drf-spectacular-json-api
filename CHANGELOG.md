@@ -8,12 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note that in line with [Django REST framework policy](https://www.django-rest-framework.org/topics/release-notes/),
 any parts of the framework not mentioned in the documentation should generally be considered private API, and may be subject to change.
 
+## [0.1.3] - 2023-07-19
+
+### Fixed
+- possible `KeyError` in `_get_response_for_code` function if content is not present in the returned dict of parent class.
+
+
 ## [0.1.2] - 2023-03-22
 
 ### Fixed
+
 - title and description translation for all relevant fields
 
 ### Changed
+
 - uses drf-spectacular schema information for title and description instead of calculating it by self
 
 ## [0.1.1] - 2023-03-02
