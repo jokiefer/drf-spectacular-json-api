@@ -283,6 +283,81 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
         )
         self.assertEqual(expected, calculated)
 
+        self.assertEqual(
+            self.schema["paths"]["/songs/"]["post"]["requestBody"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/SongRequest"
+        )
+        calculated = self.ordered(
+            self.schema["components"]["schemas"]["SongRequest"])
+        expected = self.ordered(
+            {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                "enum": ["Song"]
+                            },
+                            "attributes": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "minLength": 1
+                                    },
+                                   "length": {
+                                        "type": "integer",
+                                        "maximum": 2147483647,
+                                        "minimum": -2147483648
+                                    },
+                                   
+                                },
+                                "required": ["title", "length"]
+                            },
+                            "relationships": {
+                                "type": "object",
+                                "properties": {
+                                    "album": {
+                                        "type": "object",
+                                        "properties": {
+                                            "data": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "format": "uuid",
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                                        "enum": ["Album"],
+                                                        "title": "Resource Type Name"
+                                                    }
+                                                },
+                                                "required": ["id", "type"],
+                                            }
+                                        },
+                                        "required": ["data"],
+                                        "title": "Resource Identifier",
+                                        "description": "The identifier of the related object.",
+                                    }
+                                },
+                                "required": ["album"]
+                            }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": False
+                    }
+                },
+                "required": ["data"],
+            }
+        )
+        self.assertEqual(expected, calculated)
+
     def test_patch_request_body(self):
         """Tests if the request body matches the json:api payload schema"""
 

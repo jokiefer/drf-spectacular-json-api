@@ -170,9 +170,11 @@ class JsonApiResourceObject:
                 del self._schema["properties"]["id"]["readOnly"]
 
     def _split_into_attributes_and_relationships(self):
-        required = []
         attributes = {}
+        required_attributes = []
+
         relationships = {}
+        required_relationships = []
         # sorts the serializer fields in attributes and relationships to match the json:api resource object schema
         for field in self.serializer.fields.values():
             # https://jsonapi.org/format/#document-resource-objects
@@ -187,10 +189,12 @@ class JsonApiResourceObject:
             if isinstance(field, RelatedField) or isinstance(field, ManyRelatedField):
                 relationships[format_field_name(
                     field.field_name)] = self.get_related_field_converter_class()(field=field, drf_spectactular_field_schema=self.drf_spectacular_schema["properties"][field.field_name]).__dict__()
+                if field.required:
+                    required_relationships.append(format_field_name(field.field_name))
                 continue
 
             if field.required:
-                required.append(format_field_name(field.field_name))
+                required_attributes.append(format_field_name(field.field_name))
 
             attributes[format_field_name(
                 field.field_name)] = self.drf_spectacular_schema["properties"][field.field_name]
@@ -200,14 +204,16 @@ class JsonApiResourceObject:
                 "type": "object",
                 "properties": attributes,
             }
-            if required:
-                self._schema["properties"]["attributes"]["required"] = required
+            if required_attributes:
+                self._schema["properties"]["attributes"]["required"] = required_attributes
 
         if relationships:
             self._schema["properties"]["relationships"] = {
                 "type": "object",
                 "properties": relationships,
             }
+            if required_relationships:
+                self._schema["properties"]["relationships"]["required"] = required_relationships
 
     def __dict__(self) -> Dict:
         return self._schema

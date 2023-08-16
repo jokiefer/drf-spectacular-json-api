@@ -29,6 +29,7 @@ class AlbumSerializer(ModelSerializer):
         label=_("Nice Songs"),
         help_text=_(
             "The songs which are part of this album."),
+        required=False,
     )
 
     included_serializers = {
