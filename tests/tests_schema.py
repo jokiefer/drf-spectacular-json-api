@@ -344,6 +344,31 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                         "required": ["data"],
                                         "title": "Resource Identifier",
                                         "description": "The identifier of the related object.",
+                                    },
+                                    "created_by": {
+                                        "type": "object",
+                                        "properties": {
+                                            "data": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
+                                                        "enum": ["User"],
+                                                        "title": "Resource Type Name"
+                                                    }
+                                                },
+                                                "required": ["id", "type"],
+                                            }
+                                        },
+                                        "required": ["data"],
+                                        "title": "Resource Identifier",
+                                        "description": "The identifier of the related object.",
+                                        "readOnly": True,
                                     }
                                 },
                                 "required": ["album"]
