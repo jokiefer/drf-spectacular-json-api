@@ -37,6 +37,11 @@ class Album(Model):
     )
 
 
+class User(Model):
+
+    username = CharField(max_length=50, primary_key=True)
+    password = CharField(max_length=128)
+
 class Song(Model):
     id = UUIDField(
         primary_key=True,
@@ -52,9 +57,10 @@ class Song(Model):
         related_query_name="single",
         on_delete=CASCADE
     )
-
-
-class User(Model):
-
-    username = CharField(max_length=50, primary_key=True)
-    password = CharField(max_length=128)
+    
+    created_by = ForeignKey(
+        to=User,
+        related_name="singles",
+        related_query_name="single",
+        on_delete=CASCADE,
+    )

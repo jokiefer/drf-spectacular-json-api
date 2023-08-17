@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note that in line with [Django REST framework policy](https://www.django-rest-framework.org/topics/release-notes/),
 any parts of the framework not mentioned in the documentation should generally be considered private API, and may be subject to change.
 
+## [0.2.0] - 2023-08-17
+
+### Added
+
+- add missing `readOnly` attribute to relationships
+
+
 ## [0.1.4] - 2023-08-16
 
 ### Fixed

@@ -14,6 +14,14 @@ __all__ = [
 
 class SongSerializer(ModelSerializer):
     """ """
+    created_by = ResourceRelatedField(
+        model=User,
+        label=_("Created by"),
+        help_text=_(
+            "The user which created this song"),
+        required=False,
+        read_only=True,
+    )
 
     class Meta:
         model = Song
@@ -29,7 +37,7 @@ class AlbumSerializer(ModelSerializer):
         label=_("Nice Songs"),
         help_text=_(
             "The songs which are part of this album."),
-        required=False,
+        required=False
     )
 
     included_serializers = {
