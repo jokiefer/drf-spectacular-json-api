@@ -2,3 +2,4 @@ Django>=3.2
 djangorestframework>=3.13
 djangorestframework-jsonapi>=6.0.0
 drf-spectacular==0.25.1
+drf-extensions==0.7.1

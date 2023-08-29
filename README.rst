@@ -28,6 +28,10 @@ then configure the rest framework and drf-spectacular with the following setting
     SPECTACULAR_SETTINGS = {
         # To provide different schema components for patch and post
         "COMPONENT_SPLIT_REQUEST": True
+        # to fix path parameter names for nested routes https://chibisov.github.io/drf-extensions/docs/#nested-routes
+        "PREPROCESSING_HOOKS": [
+            "drf_spectacular_jsonapi.hooks.fix_nested_path_parameters"
+        ],
     }
 
 

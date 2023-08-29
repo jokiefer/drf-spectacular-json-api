@@ -23,7 +23,10 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "COMPONENT_SPLIT_REQUEST": True
+    "COMPONENT_SPLIT_REQUEST": True,
+    'PREPROCESSING_HOOKS': [
+        "drf_spectacular_jsonapi.hooks.fix_nested_path_parameters"
+    ],
 }
 
 

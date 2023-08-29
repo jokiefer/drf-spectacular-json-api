@@ -215,3 +215,34 @@ class JsonApiAutoSchema(AutoSchema):
             self.registry.register_on_missing(response_component)
             content["application/vnd.api+json"]["schema"] = response_component.ref
         return response
+
+    # def _resolve_path_parameters(self, variables):
+    #     result = super()._resolve_path_parameters(variables)
+    #     # If drf-extension package is used and there are nested routes, by default 
+    #     # the api paths will shown as /users/{parent_lookup_user_groups}/groups/ for example,
+    #     # where `user_groups` will always be the lookup name of the django foreign key.
+
+    #     # for json:api it would be better to change it to /users/{UserId}/groups/ (`ResourceType`Id)
+    #     # then an openapi client can combine the parent resource type `User` by it self.
+    #     # Otherwise it would not be possible for the client to determine the path parameter name on the fly...
+    #     # thats why we patch it here for the schema reperesentation.
+    #     nested_path: str = self.path
+    #     for parameter in [parameter for parameter in result if parameter.get("name").startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX)]:
+    #         old_name = parameter.get("name")
+
+    #         splitted = nested_path.split(old_name)
+    #         parent_path = splitted[0].replace('{', '')
+
+    #         match = resolve(parent_path)
+    #         parent_resource_name = get_resource_name(
+    #             context={"view": match.func.cls(action='list')})
+            
+    #         new_name = f"{parent_resource_name}Id"
+    #         parameter.update({"name": new_name})
+
+            
+    #         # has no effect to the global schema...
+    #         # TODO: change the parameter name inside the path
+    #         # self.path = self.path.replace(old_name, new_name)
+
+    #     return result
