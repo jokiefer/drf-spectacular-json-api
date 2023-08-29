@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note that in line with [Django REST framework policy](https://www.django-rest-framework.org/topics/release-notes/),
 any parts of the framework not mentioned in the documentation should generally be considered private API, and may be subject to change.
 
+## [0.3.0] - 2023-08-17
+
+### Added
+
+- new `fix_nested_path_parameters` to change the path parameter naming for [nested routes](https://chibisov.github.io/drf-extensions/docs/#nested-routes). This hook changes the path parameter name to match `{ResourceType}Id` pattern instead of `parent_lookup_{django_related_name}`.
+
+
 ## [0.2.0] - 2023-08-17
 
 ### Added
