@@ -1,7 +1,7 @@
 import re
-import types
+from warnings import warn
 
-from django.urls import resolve
+from django.urls import Resolver404, resolve
 from rest_framework_extensions.settings import extensions_api_settings
 from rest_framework_json_api.utils import get_resource_name
 
@@ -23,12 +23,22 @@ def fix_nested_path_parameters(endpoints):
             new_path = path
             for lookup in nested_lookups:
                 parent_path = path.split(lookup)[0].replace('{', '')
-                match = resolve(parent_path)
-                func = match.func
-                if hasattr(func, "cls"):
-                    func = func.cls(action='list')
+                # fix trailing slashes setting
+                if parent_path.endswith("/") and not path.endswith("/"):
+                        parent_path = parent_path[:-1]
+                
+                try:
+                    match = resolve(parent_path)
+                    func = match.func
+                    if hasattr(func, "cls"):
+                        func = func.cls(action='list')
+                    
+                        new_path = new_path.replace(lookup, f"{get_resource_name(context={'view': func})}Id")     
 
-                new_path = new_path.replace(lookup, f"{get_resource_name(context={'view': func})}Id")     
+                except Resolver404:
+                    print("error", parent_path)
+                    warn(message=f"Can't find path {parent_path} to fix nested path parameters")
+
 
             fixed_enpoints.append((new_path, path_regex, method, callback))
         else:

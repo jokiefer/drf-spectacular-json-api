@@ -1,3 +1,4 @@
+from django.urls import path
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 
 from .views import (AlbumModelViewset, NestedSongModelViewset,
@@ -13,4 +14,6 @@ router = ExtendedSimpleRouter()
     router.register(r"users", UserModelViewset, basename="user"),
 )
 
-urlpatterns = router.urls
+
+urlpatterns = [path(r"albums/{parent_lookup_album}/songs-as-view/", NestedSongModelViewset.as_view({"get": "list"}))]
+urlpatterns += router.urls
