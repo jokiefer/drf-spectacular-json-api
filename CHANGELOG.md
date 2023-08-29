@@ -8,7 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note that in line with [Django REST framework policy](https://www.django-rest-framework.org/topics/release-notes/),
 any parts of the framework not mentioned in the documentation should generally be considered private API, and may be subject to change.
 
-## [0.3.0] - 2023-08-17
+## [0.3.1] - 2023-08-29
+
+### Fixed
+
+- fixes `AttributeError 'function' object has no attribute 'cls'` on `fix_nested_path_parameters` hook
+
+
+## [0.3.0] - 2023-08-29
 
 ### Added
 

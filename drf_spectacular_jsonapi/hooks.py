@@ -1,4 +1,5 @@
 import re
+import types
 
 from django.urls import resolve
 from rest_framework_extensions.settings import extensions_api_settings
@@ -23,7 +24,11 @@ def fix_nested_path_parameters(endpoints):
             for lookup in nested_lookups:
                 parent_path = path.split(lookup)[0].replace('{', '')
                 match = resolve(parent_path)
-                new_path = new_path.replace(lookup, f"{get_resource_name(context={'view': match.func.cls(action='list')})}Id")     
+                func = match.func
+                if hasattr(func, "cls"):
+                    func = func.cls(action='list')
+
+                new_path = new_path.replace(lookup, f"{get_resource_name(context={'view': func})}Id")     
 
             fixed_enpoints.append((new_path, path_regex, method, callback))
         else:
