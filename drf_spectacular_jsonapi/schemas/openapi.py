@@ -191,8 +191,9 @@ class JsonApiAutoSchema(AutoSchema):
     def _postprocess_serializer_schema(self, schema, serializer, direction):
         schema = super()._postprocess_serializer_schema(schema, serializer, direction)
 
-        if self.method == "GET" and direction == "response":
-            # list responses shall not be framed
+        if direction == "response":
+            # responses shall not be framed.
+            # it is handled by the _get_response_for_code function
             pass
         else:
             schema = build_json_api_data_frame(schema)
@@ -218,7 +219,7 @@ class JsonApiAutoSchema(AutoSchema):
 
     # def _resolve_path_parameters(self, variables):
     #     result = super()._resolve_path_parameters(variables)
-    #     # If drf-extension package is used and there are nested routes, by default 
+    #     # If drf-extension package is used and there are nested routes, by default
     #     # the api paths will shown as /users/{parent_lookup_user_groups}/groups/ for example,
     #     # where `user_groups` will always be the lookup name of the django foreign key.
 
@@ -236,11 +237,10 @@ class JsonApiAutoSchema(AutoSchema):
     #         match = resolve(parent_path)
     #         parent_resource_name = get_resource_name(
     #             context={"view": match.func.cls(action='list')})
-            
+
     #         new_name = f"{parent_resource_name}Id"
     #         parameter.update({"name": new_name})
 
-            
     #         # has no effect to the global schema...
     #         # TODO: change the parameter name inside the path
     #         # self.path = self.path.replace(old_name, new_name)

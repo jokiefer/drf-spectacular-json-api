@@ -28,6 +28,10 @@ class SongSerializer(ModelSerializer):
         fields = "__all__"
 
 
+class SongPostOnlySerializer(SongSerializer):
+    pass
+
+
 class AlbumSerializer(ModelSerializer):
     """ """
 
