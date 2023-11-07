@@ -6,7 +6,8 @@ from rest_framework_json_api.views import (AutoPrefetchMixin, ModelViewSet,
                                            PreloadIncludesMixin, RelatedMixin)
 
 from .models import Album, Song, User
-from .serializers import AlbumSerializer, SongSerializer, UserSerializer
+from .serializers import (AlbumSerializer, SongPostOnlySerializer,
+                          SongSerializer, UserSerializer)
 
 
 class AlbumModelViewset(ModelViewSet):
@@ -29,7 +30,7 @@ class SongModelViewset(ModelViewSet):
 
 class SongModelViewsetPostOnly(ModelViewSet):
     """ """
-    serializer_class = SongSerializer
+    serializer_class = SongPostOnlySerializer
     queryset = Song.objects.none()
     http_method_names = ["post"]
 

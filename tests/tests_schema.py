@@ -122,14 +122,36 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
             "#/components/schemas/Album"
         )
 
+        self.assertEqual(
+            self.schema["paths"]["/albums/{id}/"]["get"]["responses"]["200"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/AlbumResponse"
+        )
+        self.assertEqual(
+            self.schema["components"]["schemas"]["AlbumResponse"]["properties"]["data"]["$ref"],
+            "#/components/schemas/Album"
+        )
+
     def test_post_response_body(self):
         self.assertEqual(
-            self.schema["paths"]["/songs-post-only/"]["post"]["responses"]["201"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            self.schema["paths"]["/songs/"]["post"]["responses"]["201"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
             "#/components/schemas/SongResponse"
         )
         self.assertEqual(
             self.schema["components"]["schemas"]["SongResponse"]["properties"]["data"]["$ref"],
             "#/components/schemas/Song"
+        )
+
+    def test_post_only_response_body(self):
+        self.assertEqual(
+            self.schema["paths"]["/songs-post-only/"]["post"]["responses"]["201"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/SongPostOnlyResponse"
+        )
+        self.assertEqual(
+            self.schema["components"]["schemas"]["SongPostOnlyResponse"]["properties"]["data"]["$ref"],
+            "#/components/schemas/SongPostOnly"
+        )
+        self.assertIn(
+            "attributes", self.schema["components"]["schemas"]["SongPostOnly"]["properties"]
         )
 
     def test_get_parameters(self):
