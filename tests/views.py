@@ -27,13 +27,20 @@ class SongModelViewset(ModelViewSet):
     queryset = Song.objects.none()
 
 
+class SongModelViewsetPostOnly(ModelViewSet):
+    """ """
+    serializer_class = SongSerializer
+    queryset = Song.objects.none()
+    http_method_names = ["post"]
+
+
 class UserModelViewset(ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.none()
 
 
 class NestedSongModelViewset(AutoPrefetchMixin, PreloadIncludesMixin, RelatedMixin, mixins.ListModelMixin,
-        GenericViewSet):
+                             GenericViewSet):
     """
     A viewset that provides default `list()` action for nested usage.
     """

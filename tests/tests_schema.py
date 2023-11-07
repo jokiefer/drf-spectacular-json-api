@@ -122,6 +122,16 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
             "#/components/schemas/Album"
         )
 
+    def test_post_response_body(self):
+        self.assertEqual(
+            self.schema["paths"]["/songs-post-only/"]["post"]["responses"]["201"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/SongResponse"
+        )
+        self.assertEqual(
+            self.schema["components"]["schemas"]["SongResponse"]["properties"]["data"]["$ref"],
+            "#/components/schemas/Song"
+        )
+
     def test_get_parameters(self):
         """Tests if the queryparameters are valid"""
         calculated = self.ordered(
@@ -309,12 +319,12 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                         "maxLength": 100,
                                         "minLength": 1
                                     },
-                                   "length": {
+                                    "length": {
                                         "type": "integer",
                                         "maximum": 2147483647,
                                         "minimum": -2147483648
                                     },
-                                   
+
                                 },
                                 "required": ["title", "length"]
                             },
@@ -539,33 +549,38 @@ class TestSchemaOutputForDifferentIdFieldName(SimpleSchemaTestCase):
 class TestSchemaOutputForNestedResources(SimpleSchemaTestCase):
     def test_nested_path_parameter_fix(self):
         calculated = self.ordered(
-            self.schema["paths"]["/albums/{AlbumId}/songs/"]["get"]["parameters"])        
+            self.schema["paths"]["/albums/{AlbumId}/songs/"]["get"]["parameters"])
         expected = self.ordered(
             [
-                [('description', 'A page number within the paginated result set.'), ('in', 'query'), ('name', 'page[number]'), ('required', False), ('schema', [('type', 'integer')])], 
-                [('description', 'A search term.'), ('in', 'query'), ('name', 'filter[search]'), ('required', False), ('schema', [('type', 'string')])], 
-                [('description', 'Number of results to return per page.'), ('in', 'query'), ('name', 'page[size]'), ('required', False), ('schema', [('type', 'integer')])], 
-                [('description', 'endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter.'), ('explode', False), ('in', 'query'), ('name', 'fields[Song]'), ('schema', [('items', [('enum', ['album', 'created_by', 'length', 'title']), ('type', 'string')]), ('type', 'array')])], 
+                [('description', 'A page number within the paginated result set.'), ('in', 'query'),
+                 ('name', 'page[number]'), ('required', False), ('schema', [('type', 'integer')])],
+                [('description', 'A search term.'), ('in', 'query'), ('name',
+                                                                      'filter[search]'), ('required', False), ('schema', [('type', 'string')])],
+                [('description', 'Number of results to return per page.'), ('in', 'query'),
+                 ('name', 'page[size]'), ('required', False), ('schema', [('type', 'integer')])],
+                [('description', 'endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter.'), ('explode', False),
+                 ('in', 'query'), ('name', 'fields[Song]'), ('schema', [('items', [('enum', ['album', 'created_by', 'length', 'title']), ('type', 'string')]), ('type', 'array')])],
                 [('in', 'path'), ('name', 'AlbumId'), ('required', True), ('schema', [('type', 'string')])]]
         )
         self.assertEqual(expected, calculated)
-        
 
     def test_nested_path_parameter_fix(self):
         f = open("demofile2.txt", "a")
         f.write(str(self.schema))
         f.close()
         calculated = self.ordered(
-            self.schema["paths"]["/albums/{AlbumId}/songs-as-view/"]["get"]["parameters"])        
-        
-       
+            self.schema["paths"]["/albums/{AlbumId}/songs-as-view/"]["get"]["parameters"])
+
         expected = self.ordered(
             [
-                [('description', 'A page number within the paginated result set.'), ('in', 'query'), ('name', 'page[number]'), ('required', False), ('schema', [('type', 'integer')])], 
-                [('description', 'A search term.'), ('in', 'query'), ('name', 'filter[search]'), ('required', False), ('schema', [('type', 'string')])], 
-                [('description', 'Number of results to return per page.'), ('in', 'query'), ('name', 'page[size]'), ('required', False), ('schema', [('type', 'integer')])], 
-                [('description', 'endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter.'), ('explode', False), ('in', 'query'), ('name', 'fields[Song]'), ('schema', [('items', [('enum', ['album', 'created_by', 'length', 'title']), ('type', 'string')]), ('type', 'array')])], 
+                [('description', 'A page number within the paginated result set.'), ('in', 'query'),
+                 ('name', 'page[number]'), ('required', False), ('schema', [('type', 'integer')])],
+                [('description', 'A search term.'), ('in', 'query'), ('name',
+                                                                      'filter[search]'), ('required', False), ('schema', [('type', 'string')])],
+                [('description', 'Number of results to return per page.'), ('in', 'query'),
+                 ('name', 'page[size]'), ('required', False), ('schema', [('type', 'integer')])],
+                [('description', 'endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter.'), ('explode', False),
+                 ('in', 'query'), ('name', 'fields[Song]'), ('schema', [('items', [('enum', ['album', 'created_by', 'length', 'title']), ('type', 'string')]), ('type', 'array')])],
                 [('in', 'path'), ('name', 'AlbumId'), ('required', True), ('schema', [('type', 'string')])]]
         )
         self.assertEqual(expected, calculated)
-        
