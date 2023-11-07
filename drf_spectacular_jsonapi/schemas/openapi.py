@@ -193,6 +193,7 @@ class JsonApiAutoSchema(AutoSchema):
 
         if direction == "response":
             # responses shall not be framed.
+            # it is handled by the _get_response_for_code function
             pass
         else:
             schema = build_json_api_data_frame(schema)
