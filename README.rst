@@ -4,6 +4,29 @@ drf-spectecular-json-api
 
 open api 3 schema generator for `drf-json-api <https://github.com/django-json-api/django-rest-framework-json-api>`_ package based on `drf-spectacular <https://github.com/tfranzel/drf-spectacular>`__ package.
 
+Tested with various dependency version
+--------------------------------------
+
+.. list-table:: Tested for versions in combination:
+   :widths: 25 25 50
+   :header-rows: 1
+
+   * - python
+     - django
+     - drf-spectacular
+   * - 3.8
+     - 4.0
+     - 0.25.x
+   * - 3.9
+     - 4.1
+     - 0.26.x
+   * - 3.10
+     - 4.2
+     - 0.27.x
+   * - 3.11
+     - 5.0
+     - 
+
 Installation
 ------------
 

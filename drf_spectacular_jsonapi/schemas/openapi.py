@@ -1,9 +1,12 @@
 from typing import Dict, List, Tuple
 
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.contrib.django_filters import DjangoFilterExtension
+from drf_spectacular.drainage import add_trace_message
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.plumbing import (ResolvedComponent, build_array_type,
-                                      build_parameter_type, is_list_serializer)
+                                      build_parameter_type, get_manager,
+                                      get_view_model, is_list_serializer)
 from rest_framework_json_api.serializers import SparseFieldsetsMixin
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
@@ -12,6 +15,20 @@ from rest_framework_json_api.utils import (format_field_name,
 from drf_spectacular_jsonapi.schemas.converters import JsonApiResourceObject
 from drf_spectacular_jsonapi.schemas.plumbing import build_json_api_data_frame
 from drf_spectacular_jsonapi.schemas.utils import get_primary_key_of_serializer
+
+
+class DjangoJsonApiFilterExtension(DjangoFilterExtension):
+    target_class = 'rest_framework_json_api.django_filters.backends.DjangoFilterBackend'
+    priority = 1
+
+    def resolve_filter_field(self, *args, **kwargs):
+        result = super().resolve_filter_field(*args, **kwargs)
+        for item in result:
+            name = item["name"]
+            if "filter[" not in name:
+                name = f"filter[{name}]"
+                item["name"] = name
+        return result
 
 
 class JsonApiAutoSchema(AutoSchema):
@@ -36,6 +53,7 @@ class JsonApiAutoSchema(AutoSchema):
         See also json:api docs: https://jsonapi.org/format/#fetching-sorting
         """
         parameters = super()._get_filter_parameters()
+
         sort_param = next(
             (parameter for parameter in parameters if parameter["name"] == "sort"), None)
         if sort_param and hasattr(self.view, "ordering_fields") and self.view.ordering_fields:

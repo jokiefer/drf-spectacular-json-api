@@ -15,9 +15,6 @@ license = 'BSD'
 with open("README.rst", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open('requirements/base.txt') as fh:
-    requirements = [r for r in fh.read().split('\n') if not r.startswith('#')]
-
 
 def get_version(package):
     """
@@ -43,7 +40,13 @@ setup(
     packages=[p for p in find_namespace_packages(
         exclude=('tests*',)) if p.startswith(package)],
     include_package_data=True,
-    install_requires=requirements,
+    install_requires=[
+        "Django>=3.2",
+        "drf-spectacular>=0.25.0",
+        "drf-extensions>=0.7.1",
+        "djangorestframework>=3.13",
+        "djangorestframework-jsonapi>=6.0.0"
+    ],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

@@ -1,3 +1,6 @@
+import json
+
+import rest_framework_json_api
 from django.test.testcases import SimpleTestCase
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
@@ -12,8 +15,12 @@ class SimpleSchemaTestCase(SimpleTestCase):
             return sorted((k, self.ordered(v)) for k, v in obj.items())
         if isinstance(obj, list):
             return sorted(self.ordered(x) for x in obj)
+        if isinstance(obj, tuple):
+            # nested call
+            for item in obj:
+                self.ordered(item)
         if isinstance(obj, str):
-            obj.replace("\n", "")
+            obj = obj.replace("\n", "")
         return obj
 
     def setUp(self) -> None:
@@ -22,6 +29,8 @@ class SimpleSchemaTestCase(SimpleTestCase):
         self.schema = generator.get_schema(request=None, public=True)
         # make sure generated schemas are always valid
         validate_schema(self.schema)
+
+        self.json_api_site_package_version = rest_framework_json_api.VERSION
 
 
 class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
@@ -191,7 +200,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                 'in': 'query',
                 'name': 'sort',
                 'required': False,
-                'description': 'Which field to use when ordering the results.',
+                'description': 'Which field to use when ordering the results.' if self.json_api_site_package_version == "6.0.0" else '[list of fields to sort by](https://jsonapi.org/format/#fetching-sorting)',
                 'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['id', 'title', '-id', '-title']}},
                 'explode': False
             },
@@ -205,18 +214,16 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
             {
                 'in': 'query',
                 'name': 'filter[genre]',
-                'required': False,
-                'description': 'genre',
-                'schema': {'type': 'string', 'enum': ["POP", "ROCK"]}
+                'description': 'Wich kind of genre this Album represents\n',
+                'schema': {'type': 'string', 'title': 'Nice Genre', 'enum': ["POP", "ROCK"]}
             },
             {
                 'in': 'query',
-                'name': 'filter[title.contains]',
-                'required': False,
-                'description': 'title__contains',
+                'name': 'filter[title__contains]',
                 'schema': {'type': 'string'}
             }
         ])
+
         self.assertEqual(expected, calculated)
 
     def test_post_request_body(self):
@@ -226,12 +233,10 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
             "#/components/schemas/AlbumRequest"
         )
 
-        calculated = self.ordered(
-            self.schema["components"]["schemas"]["AlbumRequest"])
-        expected = self.ordered(
-            {
-                "type": "object",
-                "properties": {
+        calculated = self.schema["components"]["schemas"]["AlbumRequest"]
+        expected = {
+            "type": "object",
+            "properties": {
                     "data": {
                         "type": "object",
                         "properties": {
@@ -309,11 +314,12 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                         "required": ["type"],
                         "additionalProperties": False
                     }
-                },
-                "required": ["data"],
-            }
-        )
-        self.assertEqual(expected, calculated)
+            },
+            "required": ["data"],
+        }
+
+        self.assertJSONEqual(json.dumps(
+            calculated, sort_keys=True), json.dumps(expected, sort_keys=True))
 
         self.assertEqual(
             self.schema["paths"]["/songs/"]["post"]["requestBody"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
@@ -413,7 +419,8 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                 "required": ["data"],
             }
         )
-        self.assertEqual(expected, calculated)
+        self.assertJSONEqual(json.dumps(
+            calculated, sort_keys=True), json.dumps(expected, sort_keys=True))
 
     def test_patch_request_body(self):
         """Tests if the request body matches the json:api payload schema"""
