@@ -27,6 +27,8 @@ SPECTACULAR_SETTINGS = {
     'PREPROCESSING_HOOKS': [
         "drf_spectacular_jsonapi.hooks.fix_nested_path_parameters"
     ],
+    # drf-spectacular >0.26 added this option which is default True. This feature is not needed and in my pov not best practice to add enum choices...
+    "ENUM_GENERATE_CHOICE_DESCRIPTION": False
 }
 
 

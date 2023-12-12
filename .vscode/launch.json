@@ -14,6 +14,18 @@
             ],
             "django": true,
             "justMyCode": false
+        },
+        {
+            "name": "Python: tox",
+            "type": "python",
+            "request": "launch",
+            "module": "tox",
+            "args": [
+                "-e",
+                "drf-spectacular27"
+            ],
+            "django": true,
+            "justMyCode": false
         }
     ]
 }

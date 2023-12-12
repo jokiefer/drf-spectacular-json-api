@@ -16,3 +16,8 @@ dist/
 
 # virtualenv
 .venv
+
+.tox/
+
+demofile.txt
+demofile2.txt
