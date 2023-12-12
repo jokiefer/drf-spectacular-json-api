@@ -9,6 +9,15 @@ Note that in line with [Django REST framework policy](https://www.django-rest-fr
 any parts of the framework not mentioned in the documentation should generally be considered private API, and may be subject to change.
 
 
+
+## [0.4.1] - 2023-12-12
+
+
+### Fixed
+
+- wrong import path inside apps.py
+
+
 ## [0.4.0] - 2023-12-12
 
 
