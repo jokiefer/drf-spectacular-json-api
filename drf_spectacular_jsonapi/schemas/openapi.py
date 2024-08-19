@@ -5,7 +5,8 @@ from drf_spectacular.contrib.django_filters import DjangoFilterExtension
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.plumbing import (ResolvedComponent, build_array_type,
                                       build_parameter_type, is_list_serializer)
-from rest_framework_json_api.serializers import SparseFieldsetsMixin
+from rest_framework_json_api.serializers import (
+    ResourceIdentifierObjectSerializer, SparseFieldsetsMixin)
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
                                            get_resource_type_from_serializer)
@@ -203,12 +204,31 @@ class JsonApiAutoSchema(AutoSchema):
             serializer=serializer, direction=direction)
 
         # second step; convert the schema to an json:api resource object schema
-        json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
-            serializer=serializer,
-            drf_spectactular_schema=object_schema,
-            method=self.method,
-        ).__dict__()
-        return json_api_resource_object_schema
+        if isinstance(serializer, ResourceIdentifierObjectSerializer):
+            # TODO: RelationshipViews are generic based and uses the
+            # ResourceIdentifierObjectSerializer class to serialize just a few information such as ID and Type of the related object
+            # instead of the full resource objects.
+            # But this is the problem here. We need a concrete resource which we can analyze and convert it into an openapi schema.
+            # Sure it is possible to return a schema like
+            """
+                {
+                    "data":
+                        "type": "any resource type",
+                        "id": "4711"
+                }
+            """
+            # But what kind of value does this openapi schema have? in my pov it has no effectiv value for use.
+            # So we need to analyze all the possible related resources to provide concrete schemas
+            pass
+            i = 0
+            return {}
+        else:
+            json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
+                serializer=serializer,
+                drf_spectactular_schema=object_schema,
+                method=self.method,
+            ).__dict__()
+            return json_api_resource_object_schema
 
     def _postprocess_serializer_schema(self, schema, serializer, direction):
         schema = super()._postprocess_serializer_schema(schema, serializer, direction)

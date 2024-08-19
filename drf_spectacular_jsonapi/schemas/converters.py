@@ -2,9 +2,10 @@ from typing import Dict
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework.fields import Field
-from rest_framework_json_api.serializers import (
-    HiddenField, HyperlinkedIdentityField, ManyRelatedField, ModelSerializer,
-    RelatedField, ResourceIdentifierObjectSerializer)
+from rest_framework_json_api.serializers import (HiddenField,
+                                                 HyperlinkedIdentityField,
+                                                 ManyRelatedField,
+                                                 ModelSerializer, RelatedField)
 from rest_framework_json_api.utils import (format_field_name,
                                            get_related_resource_type,
                                            get_resource_type_from_serializer)
@@ -149,25 +150,8 @@ class JsonApiResourceObject:
 
     def _patch_type_enum(self) -> None:
         """Resolve the resource type of the serializer and sets the type enum of the resource object schema"""
-        if isinstance(self.serializer, ResourceIdentifierObjectSerializer):
-            # TODO: RelationshipViews are generic based and uses the
-            # ResourceIdentifierObjectSerializer class to serialize just a few information such as ID and Type of the related object
-            # instead of the full resource objects.
-            # But this is the problem here. We need a concrete resource which we can analyze and convert it into an openapi schema.
-            # Sure it is possible to return a schema like
-            """
-                {
-                    "data":
-                        "type": "any resource type",
-                        "id": "4711"
-                }
-            """
-            # But what kind of value does this openapi schema have? in my pov it has no effectiv value for use.
-            # So we need to analyze all the possible related resources to provide concrete schemas
-            pass
-        else:
-            self._schema["properties"]["type"]["enum"] = [
-                get_resource_type_from_serializer(serializer=self.serializer)]
+        self._schema["properties"]["type"]["enum"] = [
+            get_resource_type_from_serializer(serializer=self.serializer)]
 
     def _patch_id_for_json_api_resource_object(self) -> None:
         """Patches the `drf_spectacular_jsonapi.schemas.models.JsonApiResourceObject._resource_object_schema` with the correct `id` property."""
