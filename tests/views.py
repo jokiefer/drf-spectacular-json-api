@@ -3,7 +3,8 @@ from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_extensions.settings import extensions_api_settings
 from rest_framework_json_api.views import (AutoPrefetchMixin, ModelViewSet,
-                                           PreloadIncludesMixin, RelatedMixin)
+                                           PreloadIncludesMixin, RelatedMixin,
+                                           RelationshipView)
 
 from .models import Album, Song, User
 from .serializers import (AlbumSerializer, SongPostOnlySerializer,
@@ -76,3 +77,7 @@ class NestedSongModelViewset(AutoPrefetchMixin, PreloadIncludesMixin, RelatedMix
                 query_value = kwarg_value
                 result[query_lookup] = query_value
         return result
+
+
+class AlbumRelationShipView(RelationshipView):
+    queryset = Album.objects

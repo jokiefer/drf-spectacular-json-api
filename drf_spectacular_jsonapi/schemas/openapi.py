@@ -2,15 +2,14 @@ from typing import Dict, List, Tuple
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.contrib.django_filters import DjangoFilterExtension
-from drf_spectacular.drainage import add_trace_message
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.plumbing import (ResolvedComponent, build_array_type,
-                                      build_parameter_type, get_manager,
-                                      get_view_model, is_list_serializer)
+                                      build_parameter_type, is_list_serializer)
 from rest_framework_json_api.serializers import SparseFieldsetsMixin
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
                                            get_resource_type_from_serializer)
+from rest_framework_json_api.views import RelationshipView
 
 from drf_spectacular_jsonapi.schemas.converters import JsonApiResourceObject
 from drf_spectacular_jsonapi.schemas.plumbing import build_json_api_data_frame
@@ -140,7 +139,12 @@ class JsonApiAutoSchema(AutoSchema):
 
     def get_tags(self) -> List[str]:
         # TODO: add a setting wich allows to configure the behaviour?
-        return [get_resource_name(context={"view": self.view})]
+        if isinstance(self.view, RelationshipView):
+            # TODO: RelationshipViews are generic based on the passed `related_field`.
+            # So to fully support all the possible related fields, we need to analyze them to get the correct related resource name
+            pass
+        else:
+            return [get_resource_name(context={"view": self.view})]
 
     def get_include_parameter(self):
         include_parameter = {}
