@@ -1,5 +1,7 @@
 from typing import Dict, List, Tuple
 
+from django.db.models.fields.reverse_related import (ManyToManyRel,
+                                                     ManyToOneRel, OneToOneRel)
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.contrib.django_filters import DjangoFilterExtension
 from drf_spectacular.openapi import AutoSchema
@@ -141,9 +143,13 @@ class JsonApiAutoSchema(AutoSchema):
     def get_tags(self) -> List[str]:
         # TODO: add a setting wich allows to configure the behaviour?
         if isinstance(self.view, RelationshipView):
-            # TODO: RelationshipViews are generic based on the passed `related_field`.
+            # RelationshipViews are generic based on the passed `related_field`.
             # So to fully support all the possible related fields, we need to analyze them to get the correct related resource name
+            # TODO:
+            # 1. get all possible related_field parameters
+            # 2. based on the possible related_field parameters (json:api ressources) build the tag array
             pass
+
         else:
             return [get_resource_name(context={"view": self.view})]
 
@@ -220,7 +226,6 @@ class JsonApiAutoSchema(AutoSchema):
             # But what kind of value does this openapi schema have? in my pov it has no effectiv value for use.
             # So we need to analyze all the possible related resources to provide concrete schemas
             pass
-            i = 0
             return {}
         else:
             json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
@@ -258,6 +263,38 @@ class JsonApiAutoSchema(AutoSchema):
             self.registry.register_on_missing(response_component)
             content["application/vnd.api+json"]["schema"] = response_component.ref
         return response
+
+    def _resolve_path_parameters(self, variables):
+        params = super()._resolve_path_parameters(variables)
+        if isinstance(self.view, RelationshipView):
+
+            base_model_cls = self.view.queryset.model
+            base_model = base_model_cls()
+            related_field_enum = []
+
+            # TODO: handle local fields: base_model.fields --> ForeignKey, OneToOne, M2M
+
+            for field_name, rel_type in base_model._meta.fields_map.items():
+                # TODO: check if all this kinds are callable by url path parameter...
+                if isinstance(rel_type, OneToOneRel):
+                    # OneToOneField on the related model
+                    related_field_enum.append(field_name)
+                elif isinstance(rel_type, ManyToOneRel):
+                    # ForeignKey on the related model
+                    related_field_enum.append(field_name)
+                elif isinstance(rel_type, ManyToManyRel):
+                    # ManyToManyField on the related model
+                    related_field_enum.append(field_name)
+
+            # TODO: there is a function `self.view.get_related_field_name` which returns the concrete name of the related_field
+            # But it will only works if the view is initialized with correct kwargs.
+            related_field_parameter = next(
+                (param for param in params if param["name"] == "related_field"), params)
+            related_field_parameter["schema"]["enum"] = related_field_enum
+            related_field_parameter["description"] = _(
+                "Pass in one of the possible relation types to get all related objects.")
+
+        return params
 
     # def _resolve_path_parameters(self, variables):
     #     result = super()._resolve_path_parameters(variables)
