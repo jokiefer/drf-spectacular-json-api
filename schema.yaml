@@ -1,0 +1,1835 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: 0.0.0
+paths:
+  /albums/:
+    get:
+      operationId: albums_list
+      parameters:
+      - in: query
+        name: fields[Album]
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - songs
+            - title
+            - genre
+            - year
+            - released
+        description: endpoint return only specific fields in the response on a per-type
+          basis by including a fields[TYPE] query parameter.
+        explode: false
+      - in: query
+        name: filter[genre]
+        schema:
+          type: string
+          title: Nice Genre
+          enum:
+          - POP
+          - ROCK
+        description: |+
+          Wich kind of genre this Album represents
+
+      - name: filter[search]
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: filter[title__contains]
+        schema:
+          type: string
+      - in: query
+        name: include
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - songs
+        description: include query parameter to allow the client to customize which
+          related resources should be returned.
+        explode: false
+      - name: page[number]
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page[size]
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: sort
+        required: false
+        in: query
+        description: '[list of fields to sort by](https://jsonapi.org/format/#fetching-sorting)'
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - id
+            - -id
+            - title
+            - -title
+        explode: false
+      tags:
+      - Album
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAlbumList'
+          description: ''
+    post:
+      operationId: albums_create
+      tags:
+      - Album
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/AlbumRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/AlbumResponse'
+          description: ''
+  /albums/{AlbumId}/songs/:
+    get:
+      operationId: albums_songs_list
+      description: A viewset that provides default `list()` action for nested usage.
+      parameters:
+      - in: path
+        name: AlbumId
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: fields[Song]
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - created_by
+            - title
+            - length
+            - album
+        description: endpoint return only specific fields in the response on a per-type
+          basis by including a fields[TYPE] query parameter.
+        explode: false
+      - name: filter[search]
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - name: page[number]
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page[size]
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Song
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSongList'
+          description: ''
+  /albums/{AlbumId}/songs-as-view/:
+    get:
+      operationId: albums_songs_as_view_list
+      description: A viewset that provides default `list()` action for nested usage.
+      parameters:
+      - in: path
+        name: AlbumId
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: fields[Song]
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - created_by
+            - title
+            - length
+            - album
+        description: endpoint return only specific fields in the response on a per-type
+          basis by including a fields[TYPE] query parameter.
+        explode: false
+      - name: filter[search]
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - name: page[number]
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page[size]
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Song
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSongList'
+          description: ''
+  /albums/{id}/:
+    get:
+      operationId: albums_retrieve
+      parameters:
+      - in: query
+        name: fields[Album]
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - songs
+            - title
+            - genre
+            - year
+            - released
+        description: endpoint return only specific fields in the response on a per-type
+          basis by including a fields[TYPE] query parameter.
+        explode: false
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this album.
+        required: true
+      - in: query
+        name: include
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - songs
+        description: include query parameter to allow the client to customize which
+          related resources should be returned.
+        explode: false
+      tags:
+      - Album
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/AlbumResponse'
+          description: ''
+    patch:
+      operationId: albums_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this album.
+        required: true
+      tags:
+      - Album
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/PatchedAlbumRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/AlbumResponse'
+          description: ''
+    delete:
+      operationId: albums_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this album.
+        required: true
+      tags:
+      - Album
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /albums/{id}/relationships/{related_field}:
+    get:
+      operationId: albums_relationships_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this album.
+        required: true
+      - in: path
+        name: related_field
+        schema:
+          type: string
+          pattern: ^[-/w]+$
+          enum:
+          - single
+        required: true
+        description: Pass in one of the possible relation types to get all related
+          objects.
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: albums_relationships_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this album.
+        required: true
+      - in: path
+        name: related_field
+        schema:
+          type: string
+          pattern: ^[-/w]+$
+          enum:
+          - single
+        required: true
+        description: Pass in one of the possible relation types to get all related
+          objects.
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/ResourceIdentifierObjectRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: albums_relationships_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this album.
+        required: true
+      - in: path
+        name: related_field
+        schema:
+          type: string
+          pattern: ^[-/w]+$
+          enum:
+          - single
+        required: true
+        description: Pass in one of the possible relation types to get all related
+          objects.
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceIdentifierObjectRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: albums_relationships_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this album.
+        required: true
+      - in: path
+        name: related_field
+        schema:
+          type: string
+          pattern: ^[-/w]+$
+          enum:
+          - single
+        required: true
+        description: Pass in one of the possible relation types to get all related
+          objects.
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /songs/:
+    get:
+      operationId: songs_list
+      parameters:
+      - in: query
+        name: fields[Song]
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - created_by
+            - title
+            - length
+            - album
+        description: endpoint return only specific fields in the response on a per-type
+          basis by including a fields[TYPE] query parameter.
+        explode: false
+      - name: filter[search]
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - name: page[number]
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page[size]
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Song
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSongList'
+          description: ''
+    post:
+      operationId: songs_create
+      tags:
+      - Song
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/SongRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+          description: ''
+  /songs-post-only/:
+    post:
+      operationId: songs_post_only_create
+      tags:
+      - Song
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/SongPostOnlyRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/SongPostOnlyResponse'
+          description: ''
+  /songs/{id}/:
+    get:
+      operationId: songs_retrieve
+      parameters:
+      - in: query
+        name: fields[Song]
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - created_by
+            - title
+            - length
+            - album
+        description: endpoint return only specific fields in the response on a per-type
+          basis by including a fields[TYPE] query parameter.
+        explode: false
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this song.
+        required: true
+      tags:
+      - Song
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+          description: ''
+    patch:
+      operationId: songs_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this song.
+        required: true
+      tags:
+      - Song
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/PatchedSongRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/SongResponse'
+          description: ''
+    delete:
+      operationId: songs_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this song.
+        required: true
+      tags:
+      - Song
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /songs/{id}/relationships/{related_field}:
+    get:
+      operationId: songs_relationships_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this song.
+        required: true
+      - in: path
+        name: related_field
+        schema:
+          type: string
+          pattern: ^[-/w]+$
+          enum:
+          - album
+          - created_by
+        required: true
+        description: Pass in one of the possible relation types to get all related
+          objects.
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: songs_relationships_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this song.
+        required: true
+      - in: path
+        name: related_field
+        schema:
+          type: string
+          pattern: ^[-/w]+$
+          enum:
+          - album
+          - created_by
+        required: true
+        description: Pass in one of the possible relation types to get all related
+          objects.
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/ResourceIdentifierObjectRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: songs_relationships_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this song.
+        required: true
+      - in: path
+        name: related_field
+        schema:
+          type: string
+          pattern: ^[-/w]+$
+          enum:
+          - album
+          - created_by
+        required: true
+        description: Pass in one of the possible relation types to get all related
+          objects.
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/PatchedResourceIdentifierObjectRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: songs_relationships_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this song.
+        required: true
+      - in: path
+        name: related_field
+        schema:
+          type: string
+          pattern: ^[-/w]+$
+          enum:
+          - album
+          - created_by
+        required: true
+        description: Pass in one of the possible relation types to get all related
+          objects.
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /users/:
+    get:
+      operationId: users_list
+      description: |-
+        This mixin provides a helper attributes to select or prefetch related models
+        based on the include specified in the URL.
+
+        __all__ can be used to specify a prefetch which should be done regardless of the include
+
+
+        .. code:: python
+
+            # When MyViewSet is called with ?include=author it will prefetch author and authorbio
+            class MyViewSet(viewsets.ModelViewSet):
+                queryset = Book.objects.all()
+                prefetch_for_includes = {
+                    '__all__': [],
+                    'category.section': ['category']
+                }
+                select_for_includes = {
+                    '__all__': [],
+                    'author': ['author', 'author__authorbio'],
+                }
+      parameters:
+      - in: query
+        name: fields[User]
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - password
+        description: endpoint return only specific fields in the response on a per-type
+          basis by including a fields[TYPE] query parameter.
+        explode: false
+      - name: filter[search]
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - name: page[number]
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page[size]
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - User
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: users_create
+      description: |-
+        This mixin provides a helper attributes to select or prefetch related models
+        based on the include specified in the URL.
+
+        __all__ can be used to specify a prefetch which should be done regardless of the include
+
+
+        .. code:: python
+
+            # When MyViewSet is called with ?include=author it will prefetch author and authorbio
+            class MyViewSet(viewsets.ModelViewSet):
+                queryset = Book.objects.all()
+                prefetch_for_includes = {
+                    '__all__': [],
+                    'category.section': ['category']
+                }
+                select_for_includes = {
+                    '__all__': [],
+                    'author': ['author', 'author__authorbio'],
+                }
+      tags:
+      - User
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+          description: ''
+  /users/{username}/:
+    get:
+      operationId: users_retrieve
+      description: |-
+        This mixin provides a helper attributes to select or prefetch related models
+        based on the include specified in the URL.
+
+        __all__ can be used to specify a prefetch which should be done regardless of the include
+
+
+        .. code:: python
+
+            # When MyViewSet is called with ?include=author it will prefetch author and authorbio
+            class MyViewSet(viewsets.ModelViewSet):
+                queryset = Book.objects.all()
+                prefetch_for_includes = {
+                    '__all__': [],
+                    'category.section': ['category']
+                }
+                select_for_includes = {
+                    '__all__': [],
+                    'author': ['author', 'author__authorbio'],
+                }
+      parameters:
+      - in: query
+        name: fields[User]
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - password
+        description: endpoint return only specific fields in the response on a per-type
+          basis by including a fields[TYPE] query parameter.
+        explode: false
+      - in: path
+        name: username
+        schema:
+          type: string
+        description: A unique value identifying this user.
+        required: true
+      tags:
+      - User
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+          description: ''
+    patch:
+      operationId: users_partial_update
+      description: |-
+        This mixin provides a helper attributes to select or prefetch related models
+        based on the include specified in the URL.
+
+        __all__ can be used to specify a prefetch which should be done regardless of the include
+
+
+        .. code:: python
+
+            # When MyViewSet is called with ?include=author it will prefetch author and authorbio
+            class MyViewSet(viewsets.ModelViewSet):
+                queryset = Book.objects.all()
+                prefetch_for_includes = {
+                    '__all__': [],
+                    'category.section': ['category']
+                }
+                select_for_includes = {
+                    '__all__': [],
+                    'author': ['author', 'author__authorbio'],
+                }
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+        description: A unique value identifying this user.
+        required: true
+      tags:
+      - User
+      requestBody:
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+          description: ''
+    delete:
+      operationId: users_destroy
+      description: |-
+        This mixin provides a helper attributes to select or prefetch related models
+        based on the include specified in the URL.
+
+        __all__ can be used to specify a prefetch which should be done regardless of the include
+
+
+        .. code:: python
+
+            # When MyViewSet is called with ?include=author it will prefetch author and authorbio
+            class MyViewSet(viewsets.ModelViewSet):
+                queryset = Book.objects.all()
+                prefetch_for_includes = {
+                    '__all__': [],
+                    'category.section': ['category']
+                }
+                select_for_includes = {
+                    '__all__': [],
+                    'author': ['author', 'author__authorbio'],
+                }
+      parameters:
+      - in: path
+        name: username
+        schema:
+          type: string
+        description: A unique value identifying this user.
+        required: true
+      tags:
+      - User
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    Album:
+      type: object
+      required:
+      - type
+      - id
+      additionalProperties: false
+      properties:
+        type:
+          allOf:
+          - $ref: '#/components/schemas/AlbumTypeEnum'
+          description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+            member is used to describe resource objects that share common attributes
+            and relationships.
+        id:
+          type: string
+          format: uuid
+        attributes:
+          type: object
+          properties:
+            title:
+              type: string
+              title: Nice Title
+              description: The title of the Album
+              maxLength: 100
+            genre:
+              enum:
+              - POP
+              - ROCK
+              type: string
+              title: Nice Genre
+              description: Wich kind of genre this Album represents
+            year:
+              type: integer
+              maximum: 2147483647
+              minimum: -2147483648
+              title: Nice Year
+              description: The release year
+            released:
+              type: boolean
+              title: Nice Released
+              description: Is this Album released or not?
+          required:
+          - title
+          - genre
+          - year
+          - released
+        relationships:
+          type: object
+          properties:
+            songs:
+              type: object
+              properties:
+                data:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        title: Resource Identifier
+                        description: The identifier of the related object.
+                      type:
+                        type: string
+                        enum:
+                        - Song
+                        title: Resource Type Name
+                        description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                          member is used to describe resource objects that share common
+                          attributes and relationships.
+                    required:
+                    - id
+                    - type
+              required:
+              - data
+              description: The songs which are part of this album.
+              title: Nice Songs
+    AlbumRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - type
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                member is used to describe resource objects that share common attributes
+                and relationships.
+              enum:
+              - Album
+            attributes:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  title: Nice Title
+                  description: The title of the Album
+                  maxLength: 100
+                genre:
+                  enum:
+                  - POP
+                  - ROCK
+                  type: string
+                  title: Nice Genre
+                  description: Wich kind of genre this Album represents
+                year:
+                  type: integer
+                  maximum: 2147483647
+                  minimum: -2147483648
+                  title: Nice Year
+                  description: The release year
+                released:
+                  type: boolean
+                  title: Nice Released
+                  description: Is this Album released or not?
+              required:
+              - title
+              - genre
+              - year
+              - released
+            relationships:
+              type: object
+              properties:
+                songs:
+                  type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                            title: Resource Identifier
+                            description: The identifier of the related object.
+                          type:
+                            type: string
+                            enum:
+                            - Song
+                            title: Resource Type Name
+                            description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                              member is used to describe resource objects that share
+                              common attributes and relationships.
+                        required:
+                        - id
+                        - type
+                  required:
+                  - data
+                  description: The songs which are part of this album.
+                  title: Nice Songs
+      required:
+      - data
+    AlbumResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Album'
+      required:
+      - data
+    AlbumTypeEnum:
+      type: string
+      enum:
+      - Album
+    PaginatedAlbumList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Album'
+      required:
+      - data
+    PaginatedSongList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Song'
+      required:
+      - data
+    PaginatedUserList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+      required:
+      - data
+    PatchedAlbumRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - type
+          - id
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                member is used to describe resource objects that share common attributes
+                and relationships.
+              enum:
+              - Album
+            id:
+              type: string
+              format: uuid
+            attributes:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  title: Nice Title
+                  description: The title of the Album
+                  maxLength: 100
+                genre:
+                  enum:
+                  - POP
+                  - ROCK
+                  type: string
+                  title: Nice Genre
+                  description: Wich kind of genre this Album represents
+                year:
+                  type: integer
+                  maximum: 2147483647
+                  minimum: -2147483648
+                  title: Nice Year
+                  description: The release year
+                released:
+                  type: boolean
+                  title: Nice Released
+                  description: Is this Album released or not?
+              required:
+              - title
+              - genre
+              - year
+              - released
+            relationships:
+              type: object
+              properties:
+                songs:
+                  type: object
+                  properties:
+                    data:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                            title: Resource Identifier
+                            description: The identifier of the related object.
+                          type:
+                            type: string
+                            enum:
+                            - Song
+                            title: Resource Type Name
+                            description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                              member is used to describe resource objects that share
+                              common attributes and relationships.
+                        required:
+                        - id
+                        - type
+                  required:
+                  - data
+                  description: The songs which are part of this album.
+                  title: Nice Songs
+      required:
+      - data
+    PatchedResourceIdentifierObjectRequest:
+      type: object
+      properties:
+        data: {}
+      required:
+      - data
+    PatchedSongRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - type
+          - id
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                member is used to describe resource objects that share common attributes
+                and relationships.
+              enum:
+              - Song
+            id:
+              type: string
+              format: uuid
+            attributes:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                length:
+                  type: integer
+                  maximum: 2147483647
+                  minimum: -2147483648
+              required:
+              - title
+              - length
+            relationships:
+              type: object
+              properties:
+                created_by:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          minLength: 1
+                        type:
+                          type: string
+                          enum:
+                          - User
+                          title: Resource Type Name
+                          description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                            member is used to describe resource objects that share
+                            common attributes and relationships.
+                      required:
+                      - id
+                      - type
+                  required:
+                  - data
+                  description: The identifier of the related object.
+                  title: Resource Identifier
+                  readOnly: true
+                album:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        type:
+                          type: string
+                          enum:
+                          - Album
+                          title: Resource Type Name
+                          description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                            member is used to describe resource objects that share
+                            common attributes and relationships.
+                      required:
+                      - id
+                      - type
+                  required:
+                  - data
+                  description: The identifier of the related object.
+                  title: Resource Identifier
+              required:
+              - album
+      required:
+      - data
+    PatchedUserRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - type
+          - id
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                member is used to describe resource objects that share common attributes
+                and relationships.
+              enum:
+              - User
+            id:
+              type: string
+              minLength: 1
+              maxLength: 50
+            attributes:
+              type: object
+              properties:
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+              required:
+              - password
+      required:
+      - data
+    ResourceIdentifierObjectRequest:
+      type: object
+      properties:
+        data: {}
+      required:
+      - data
+    Song:
+      type: object
+      required:
+      - type
+      - id
+      additionalProperties: false
+      properties:
+        type:
+          allOf:
+          - $ref: '#/components/schemas/Type2e2Enum'
+          description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+            member is used to describe resource objects that share common attributes
+            and relationships.
+        id:
+          type: string
+          format: uuid
+        attributes:
+          type: object
+          properties:
+            title:
+              type: string
+              maxLength: 100
+            length:
+              type: integer
+              maximum: 2147483647
+              minimum: -2147483648
+          required:
+          - title
+          - length
+        relationships:
+          type: object
+          properties:
+            created_by:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    type:
+                      type: string
+                      enum:
+                      - User
+                      title: Resource Type Name
+                      description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                        member is used to describe resource objects that share common
+                        attributes and relationships.
+                  required:
+                  - id
+                  - type
+              required:
+              - data
+              description: The identifier of the related object.
+              title: Resource Identifier
+              readOnly: true
+            album:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    type:
+                      type: string
+                      enum:
+                      - Album
+                      title: Resource Type Name
+                      description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                        member is used to describe resource objects that share common
+                        attributes and relationships.
+                  required:
+                  - id
+                  - type
+              required:
+              - data
+              description: The identifier of the related object.
+              title: Resource Identifier
+          required:
+          - album
+    SongPostOnly:
+      type: object
+      required:
+      - type
+      additionalProperties: false
+      properties:
+        type:
+          allOf:
+          - $ref: '#/components/schemas/Type2e2Enum'
+          description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+            member is used to describe resource objects that share common attributes
+            and relationships.
+        attributes:
+          type: object
+          properties:
+            title:
+              type: string
+              maxLength: 100
+            length:
+              type: integer
+              maximum: 2147483647
+              minimum: -2147483648
+          required:
+          - title
+          - length
+        relationships:
+          type: object
+          properties:
+            created_by:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    type:
+                      type: string
+                      enum:
+                      - User
+                      title: Resource Type Name
+                      description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                        member is used to describe resource objects that share common
+                        attributes and relationships.
+                  required:
+                  - id
+                  - type
+              required:
+              - data
+              description: The identifier of the related object.
+              title: Resource Identifier
+              readOnly: true
+            album:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    type:
+                      type: string
+                      enum:
+                      - Album
+                      title: Resource Type Name
+                      description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                        member is used to describe resource objects that share common
+                        attributes and relationships.
+                  required:
+                  - id
+                  - type
+              required:
+              - data
+              description: The identifier of the related object.
+              title: Resource Identifier
+          required:
+          - album
+    SongPostOnlyRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - type
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                member is used to describe resource objects that share common attributes
+                and relationships.
+              enum:
+              - Song
+            attributes:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                length:
+                  type: integer
+                  maximum: 2147483647
+                  minimum: -2147483648
+              required:
+              - title
+              - length
+            relationships:
+              type: object
+              properties:
+                created_by:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          minLength: 1
+                        type:
+                          type: string
+                          enum:
+                          - User
+                          title: Resource Type Name
+                          description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                            member is used to describe resource objects that share
+                            common attributes and relationships.
+                      required:
+                      - id
+                      - type
+                  required:
+                  - data
+                  description: The identifier of the related object.
+                  title: Resource Identifier
+                  readOnly: true
+                album:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        type:
+                          type: string
+                          enum:
+                          - Album
+                          title: Resource Type Name
+                          description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                            member is used to describe resource objects that share
+                            common attributes and relationships.
+                      required:
+                      - id
+                      - type
+                  required:
+                  - data
+                  description: The identifier of the related object.
+                  title: Resource Identifier
+              required:
+              - album
+      required:
+      - data
+    SongPostOnlyResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SongPostOnly'
+      required:
+      - data
+    SongRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - type
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                member is used to describe resource objects that share common attributes
+                and relationships.
+              enum:
+              - Song
+            attributes:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                length:
+                  type: integer
+                  maximum: 2147483647
+                  minimum: -2147483648
+              required:
+              - title
+              - length
+            relationships:
+              type: object
+              properties:
+                created_by:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          minLength: 1
+                        type:
+                          type: string
+                          enum:
+                          - User
+                          title: Resource Type Name
+                          description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                            member is used to describe resource objects that share
+                            common attributes and relationships.
+                      required:
+                      - id
+                      - type
+                  required:
+                  - data
+                  description: The identifier of the related object.
+                  title: Resource Identifier
+                  readOnly: true
+                album:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        type:
+                          type: string
+                          enum:
+                          - Album
+                          title: Resource Type Name
+                          description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                            member is used to describe resource objects that share
+                            common attributes and relationships.
+                      required:
+                      - id
+                      - type
+                  required:
+                  - data
+                  description: The identifier of the related object.
+                  title: Resource Identifier
+              required:
+              - album
+      required:
+      - data
+    SongResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Song'
+      required:
+      - data
+    Type2e2Enum:
+      type: string
+      enum:
+      - Song
+    User:
+      type: object
+      required:
+      - type
+      - id
+      additionalProperties: false
+      properties:
+        type:
+          allOf:
+          - $ref: '#/components/schemas/UserTypeEnum'
+          description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+            member is used to describe resource objects that share common attributes
+            and relationships.
+        id:
+          type: string
+          maxLength: 50
+        attributes:
+          type: object
+          properties:
+            password:
+              type: string
+              maxLength: 128
+          required:
+          - password
+    UserRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - type
+          - id
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              description: The [type](https://jsonapi.org/format/#document-resource-object-identification)
+                member is used to describe resource objects that share common attributes
+                and relationships.
+              enum:
+              - User
+            id:
+              type: string
+              minLength: 1
+              maxLength: 50
+            attributes:
+              type: object
+              properties:
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+              required:
+              - password
+      required:
+      - data
+    UserResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/User'
+      required:
+      - data
+    UserTypeEnum:
+      type: string
+      enum:
+      - User
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

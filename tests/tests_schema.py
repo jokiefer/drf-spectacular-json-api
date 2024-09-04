@@ -613,3 +613,50 @@ class TestSchemaOutputForNestedResources(SimpleSchemaTestCase):
                 [('in', 'path'), ('name', 'AlbumId'), ('required', True), ('schema', [('type', 'string')])]]
         )
         self.assertEqual(expected, calculated)
+
+
+class TestSchemaOutputForRelationshipView(SimpleSchemaTestCase):
+
+    def test_relationshipview_get_parameters(self):
+        # TODO: id should be AlbumId
+        calculated = self.ordered(
+            self.schema["paths"]["/albums/{id}/relationships/{related_field}"]["get"]["parameters"])
+        expected = self.ordered(
+            [
+                [
+                    ('description', 'A UUID string identifying this album.'),
+                    ('in', 'path'),
+                    ('name', 'id'),
+                    ('required', True),
+                    ('schema', [('format', 'uuid'), ('type', 'string')])
+                ],
+                [
+                    ('description', 'Pass in one of the possible relation types to get all related objects.'),
+                    ('in', 'path'),
+                    ('name', 'related_field'),
+                    ('required', True),
+                    ('schema', [('enum', ['single']), ('pattern', '^[-/w]+$'), ('type', 'string')])]
+            ]
+        )
+        self.assertEqual(expected, calculated)
+
+        calculated = self.ordered(
+            self.schema["paths"]["/songs/{id}/relationships/{related_field}"]["get"]["parameters"])
+        expected = self.ordered(
+            [
+                [
+                    ('description', 'A UUID string identifying this song.'),
+                    ('in', 'path'),
+                    ('name', 'id'),
+                    ('required', True),
+                    ('schema', [('format', 'uuid'), ('type', 'string')])
+                ],
+                [
+                    ('description', 'Pass in one of the possible relation types to get all related objects.'),
+                    ('in', 'path'),
+                    ('name', 'related_field'),
+                    ('required', True),
+                    ('schema', [('enum', ['album', 'created_by']), ('pattern', '^[-/w]+$'), ('type', 'string')])]
+            ]
+        )
+        self.assertEqual(expected, calculated)

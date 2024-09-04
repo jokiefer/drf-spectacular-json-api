@@ -81,3 +81,7 @@ class NestedSongModelViewset(AutoPrefetchMixin, PreloadIncludesMixin, RelatedMix
 
 class AlbumRelationShipView(RelationshipView):
     queryset = Album.objects
+
+
+class SongRelationShipView(RelationshipView):
+    queryset = Song.objects

@@ -3,7 +3,8 @@ from rest_framework_extensions.routers import ExtendedSimpleRouter
 
 from .views import (AlbumModelViewset, AlbumRelationShipView,
                     NestedSongModelViewset, SongModelViewset,
-                    SongModelViewsetPostOnly, UserModelViewset)
+                    SongModelViewsetPostOnly, SongRelationShipView,
+                    UserModelViewset)
 
 router = ExtendedSimpleRouter()
 
@@ -26,6 +27,11 @@ urlpatterns = [
     path(
         r'^albums/(?P<pk>[^/.]+)/relationships/(?P<related_field>[-/w]+)$',
         AlbumRelationShipView.as_view(),
+        name='order-relationships'
+    ),
+    path(
+        r'^songs/(?P<pk>[^/.]+)/relationships/(?P<related_field>[-/w]+)$',
+        SongRelationShipView.as_view(),
         name='order-relationships'
     )
 ]

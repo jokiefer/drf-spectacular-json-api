@@ -1,5 +1,7 @@
 from typing import Dict, List, Tuple
 
+from django.db.models.fields.related import (ForeignKey, ManyToManyField,
+                                             OneToOneField)
 from django.db.models.fields.reverse_related import (ManyToManyRel,
                                                      ManyToOneRel, OneToOneRel)
 from django.utils.translation import gettext_lazy as _
@@ -272,18 +274,14 @@ class JsonApiAutoSchema(AutoSchema):
             base_model = base_model_cls()
             related_field_enum = []
 
-            # TODO: handle local fields: base_model.fields --> ForeignKey, OneToOne, M2M
+            # local relation fields
+            for field in base_model._meta.fields:
+                if isinstance(field, (ForeignKey, OneToOneField, ManyToManyField)):
+                    related_field_enum.append(field.name)
 
+            # reverse relations
             for field_name, rel_type in base_model._meta.fields_map.items():
-                # TODO: check if all this kinds are callable by url path parameter...
-                if isinstance(rel_type, OneToOneRel):
-                    # OneToOneField on the related model
-                    related_field_enum.append(field_name)
-                elif isinstance(rel_type, ManyToOneRel):
-                    # ForeignKey on the related model
-                    related_field_enum.append(field_name)
-                elif isinstance(rel_type, ManyToManyRel):
-                    # ManyToManyField on the related model
+                if isinstance(rel_type, (OneToOneRel, ManyToOneRel, ManyToManyRel)):
                     related_field_enum.append(field_name)
 
             # TODO: there is a function `self.view.get_related_field_name` which returns the concrete name of the related_field
