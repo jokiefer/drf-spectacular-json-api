@@ -219,16 +219,43 @@ class JsonApiAutoSchema(AutoSchema):
             # But this is the problem here. We need a concrete resource which we can analyze and convert it into an openapi schema.
             # Sure it is possible to return a schema like
             """
-                {
-                    "data":
-                        "type": "any resource type",
-                        "id": "4711"
+                # to-one relationship
+                "data": {
+                    {"type": "tags", "id": 12},
                 }
+
+                #  to-many relationship
+                "data": [
+                    {"type": "tags", "id": 2},
+                    {"type": "tags", "id": 3}
+                ]
             """
             # But what kind of value does this openapi schema have? in my pov it has no effectiv value for use.
             # So we need to analyze all the possible related resources to provide concrete schemas
-            pass
-            return {}
+            # TODO: get schema of the related object types to build example responses
+            return {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["type"],
+                    "additionalProperties": False,
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": _("The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."),
+                        },
+                        "id": {
+                            "type": "uuid",
+                            "description": _("id")
+                        }
+                        # TODO:
+                        # "links": {
+                        #     "type": "object",
+                        #     "properties": {"self": {"$ref": "#/components/schemas/link"}},
+                        # },
+                    },
+                },
+            }
         else:
             json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
                 serializer=serializer,
@@ -293,33 +320,3 @@ class JsonApiAutoSchema(AutoSchema):
                 "Pass in one of the possible relation types to get all related objects.")
 
         return params
-
-    # def _resolve_path_parameters(self, variables):
-    #     result = super()._resolve_path_parameters(variables)
-    #     # If drf-extension package is used and there are nested routes, by default
-    #     # the api paths will shown as /users/{parent_lookup_user_groups}/groups/ for example,
-    #     # where `user_groups` will always be the lookup name of the django foreign key.
-
-    #     # for json:api it would be better to change it to /users/{UserId}/groups/ (`ResourceType`Id)
-    #     # then an openapi client can combine the parent resource type `User` by it self.
-    #     # Otherwise it would not be possible for the client to determine the path parameter name on the fly...
-    #     # thats why we patch it here for the schema reperesentation.
-    #     nested_path: str = self.path
-    #     for parameter in [parameter for parameter in result if parameter.get("name").startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX)]:
-    #         old_name = parameter.get("name")
-
-    #         splitted = nested_path.split(old_name)
-    #         parent_path = splitted[0].replace('{', '')
-
-    #         match = resolve(parent_path)
-    #         parent_resource_name = get_resource_name(
-    #             context={"view": match.func.cls(action='list')})
-
-    #         new_name = f"{parent_resource_name}Id"
-    #         parameter.update({"name": new_name})
-
-    #         # has no effect to the global schema...
-    #         # TODO: change the parameter name inside the path
-    #         # self.path = self.path.replace(old_name, new_name)
-
-    #     return result
