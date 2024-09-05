@@ -13,12 +13,14 @@ from rest_framework_json_api.serializers import (
     ResourceIdentifierObjectSerializer, SparseFieldsetsMixin)
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
+                                           get_resource_type_from_model,
                                            get_resource_type_from_serializer)
 from rest_framework_json_api.views import RelationshipView
 
 from drf_spectacular_jsonapi.schemas.converters import JsonApiResourceObject
 from drf_spectacular_jsonapi.schemas.plumbing import build_json_api_data_frame
 from drf_spectacular_jsonapi.schemas.utils import get_primary_key_of_serializer
+from tests.views import SongRelationShipView
 
 
 class DjangoJsonApiFilterExtension(DjangoFilterExtension):
@@ -205,64 +207,90 @@ class JsonApiAutoSchema(AutoSchema):
             result = result | self.get_sparse_fieldset_parameters()
         return result
 
+    def _get_serializer_name(self, serializer, direction, bypass_extensions=False):
+        if isinstance(serializer, ResourceIdentifierObjectSerializer) and isinstance(self.view, RelationshipView):
+            resource_name = get_resource_type_from_model(
+                self.view.queryset.model)
+            return f"{resource_name}RelationShips"
+
+        return super()._get_serializer_name(serializer, direction, bypass_extensions)
+
+    def _map_serializer(self, serializer, direction, bypass_extensions=False):
+        if isinstance(serializer, ResourceIdentifierObjectSerializer):
+            one_of = []
+
+            related_fields = self._get_relationship_fields()
+
+            for name, field in related_fields:
+                resource_name = get_resource_type_from_model(
+                    field.related_model)
+
+                if isinstance(field, (ManyToManyField, ManyToOneRel, ManyToManyRel)):
+                    one_of.append({
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": ["type"],
+                            "additionalProperties": False,
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "description": _("The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."),
+                                    "enum": [resource_name]
+                                },
+                                "id": {
+                                    "type": "string",
+                                    "description": _(f"A unique value identifying this {resource_name}.")
+                                }
+                                # TODO:
+                                # "links": {
+                                #     "type": "object",
+                                #     "properties": {"self": {"$ref": "#/components/schemas/link"}},
+                                # },
+                            },
+                        },
+                    })
+                else:
+                    one_of.append({
+                        "type": "object",
+                        "required": ["type"],
+                        "additionalProperties": False,
+                        "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "description": _("The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."),
+                                    "enum": [resource_name]
+                                },
+                            "id": {
+                                    "type": "string",
+                                    "description": _(f"A unique value identifying this {resource_name}.")
+                                    }
+                            # TODO:
+                            # "links": {
+                            #     "type": "object",
+                            #     "properties": {"self": {"$ref": "#/components/schemas/link"}},
+                            # },
+                        },
+                    })
+
+            return {
+                "oneOf": one_of
+            }
+
+        return super()._map_serializer(serializer, direction, bypass_extensions)
+
     def _map_basic_serializer(self, serializer, direction):
         # let drf_spectacular do the default drf_spectacular stuff first.
         # It is an performace leak, but for now the only handy way without copy paste all the drf_spectacular code.
         object_schema = super()._map_basic_serializer(
             serializer=serializer, direction=direction)
 
-        # second step; convert the schema to an json:api resource object schema
-        if isinstance(serializer, ResourceIdentifierObjectSerializer):
-            # TODO: RelationshipViews are generic based and uses the
-            # ResourceIdentifierObjectSerializer class to serialize just a few information such as ID and Type of the related object
-            # instead of the full resource objects.
-            # But this is the problem here. We need a concrete resource which we can analyze and convert it into an openapi schema.
-            # Sure it is possible to return a schema like
-            """
-                # to-one relationship
-                "data": {
-                    {"type": "tags", "id": 12},
-                }
-
-                #  to-many relationship
-                "data": [
-                    {"type": "tags", "id": 2},
-                    {"type": "tags", "id": 3}
-                ]
-            """
-            # But what kind of value does this openapi schema have? in my pov it has no effectiv value for use.
-            # So we need to analyze all the possible related resources to provide concrete schemas
-            # TODO: get schema of the related object types to build example responses
-            return {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "required": ["type"],
-                    "additionalProperties": False,
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "description": _("The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."),
-                        },
-                        "id": {
-                            "type": "uuid",
-                            "description": _("id")
-                        }
-                        # TODO:
-                        # "links": {
-                        #     "type": "object",
-                        #     "properties": {"self": {"$ref": "#/components/schemas/link"}},
-                        # },
-                    },
-                },
-            }
-        else:
-            json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
-                serializer=serializer,
-                drf_spectactular_schema=object_schema,
-                method=self.method,
-            ).__dict__()
-            return json_api_resource_object_schema
+        json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
+            serializer=serializer,
+            drf_spectactular_schema=object_schema,
+            method=self.method,
+        ).__dict__()
+        return json_api_resource_object_schema
 
     def _postprocess_serializer_schema(self, schema, serializer, direction):
         schema = super()._postprocess_serializer_schema(schema, serializer, direction)
@@ -293,29 +321,36 @@ class JsonApiAutoSchema(AutoSchema):
             content["application/vnd.api+json"]["schema"] = response_component.ref
         return response
 
+    def _get_relationship_fields(self):
+        base_model_cls = self.view.queryset.model
+        base_model = base_model_cls()
+        related_fields = []
+
+        # local relation fields
+        for field in base_model._meta.fields:
+            if isinstance(field, (ForeignKey, OneToOneField, ManyToManyField)):
+                if field.name == "album":
+                    i = 0
+                related_fields.append((field.name, field))
+
+        # reverse relations
+        for field_name, rel_type in base_model._meta.fields_map.items():
+            if isinstance(rel_type, (OneToOneRel, ManyToOneRel, ManyToManyRel)):
+                related_fields.append((field_name, rel_type))
+
+        return related_fields
+
     def _resolve_path_parameters(self, variables):
         params = super()._resolve_path_parameters(variables)
         if isinstance(self.view, RelationshipView):
-
-            base_model_cls = self.view.queryset.model
-            base_model = base_model_cls()
-            related_field_enum = []
-
-            # local relation fields
-            for field in base_model._meta.fields:
-                if isinstance(field, (ForeignKey, OneToOneField, ManyToManyField)):
-                    related_field_enum.append(field.name)
-
-            # reverse relations
-            for field_name, rel_type in base_model._meta.fields_map.items():
-                if isinstance(rel_type, (OneToOneRel, ManyToOneRel, ManyToManyRel)):
-                    related_field_enum.append(field_name)
+            related_fields = self._get_relationship_fields()
 
             # TODO: there is a function `self.view.get_related_field_name` which returns the concrete name of the related_field
             # But it will only works if the view is initialized with correct kwargs.
             related_field_parameter = next(
                 (param for param in params if param["name"] == "related_field"), params)
-            related_field_parameter["schema"]["enum"] = related_field_enum
+            related_field_parameter["schema"]["enum"] = [
+                name for name, field in related_fields]
             related_field_parameter["description"] = _(
                 "Pass in one of the possible relation types to get all related objects.")
 
