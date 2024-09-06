@@ -1,20 +1,26 @@
 from typing import Dict, List, Tuple
 
+from django.db.models.fields.related import (ForeignKey, ManyToManyField,
+                                             OneToOneField)
+from django.db.models.fields.reverse_related import (ManyToManyRel,
+                                                     ManyToOneRel, OneToOneRel)
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.contrib.django_filters import DjangoFilterExtension
-from drf_spectacular.drainage import add_trace_message
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.plumbing import (ResolvedComponent, build_array_type,
-                                      build_parameter_type, get_manager,
-                                      get_view_model, is_list_serializer)
-from rest_framework_json_api.serializers import SparseFieldsetsMixin
+                                      build_parameter_type, is_list_serializer)
+from rest_framework_json_api.serializers import (
+    ResourceIdentifierObjectSerializer, SparseFieldsetsMixin)
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
+                                           get_resource_type_from_model,
                                            get_resource_type_from_serializer)
+from rest_framework_json_api.views import RelationshipView
 
 from drf_spectacular_jsonapi.schemas.converters import JsonApiResourceObject
 from drf_spectacular_jsonapi.schemas.plumbing import build_json_api_data_frame
 from drf_spectacular_jsonapi.schemas.utils import get_primary_key_of_serializer
+from tests.views import SongRelationShipView
 
 
 class DjangoJsonApiFilterExtension(DjangoFilterExtension):
@@ -139,8 +145,15 @@ class JsonApiAutoSchema(AutoSchema):
             sort_param["explode"] = False
 
     def get_tags(self) -> List[str]:
-        # TODO: add a setting wich allows to configure the behaviour?
-        return [get_resource_name(context={"view": self.view})]
+        if isinstance(self.view, RelationshipView):
+            # RelationshipViews are generic based on the passed `related_field`.
+            # So to fully support all the possible related fields, we need to analyze them to get the correct related resource name
+
+            # 1. get all possible related_field parameters
+            # 2. based on the possible related_field parameters (json:api ressources) build the tag array
+            return [get_resource_type_from_model(field.related_model) for name, field in self._get_relationship_fields()] + ['RelationshipViews']
+        else:
+            return [get_resource_name(context={"view": self.view})]
 
     def get_include_parameter(self):
         include_parameter = {}
@@ -192,13 +205,67 @@ class JsonApiAutoSchema(AutoSchema):
             result = result | self.get_sparse_fieldset_parameters()
         return result
 
+    def _get_serializer_name(self, serializer, direction, bypass_extensions=False):
+        if isinstance(serializer, ResourceIdentifierObjectSerializer) and isinstance(self.view, RelationshipView):
+            resource_name = get_resource_type_from_model(
+                self.view.queryset.model)
+            return f"{resource_name}RelationShips"
+
+        return super()._get_serializer_name(serializer, direction, bypass_extensions)
+
+    def _map_serializer(self, serializer, direction, bypass_extensions=False):
+        if isinstance(serializer, ResourceIdentifierObjectSerializer):
+            one_of = []
+
+            related_fields = self._get_relationship_fields()
+
+            for name, field in related_fields:
+                resource_name = get_resource_type_from_model(
+                    field.related_model)
+
+                related_model_instance = field.related_model()
+                fields = related_model_instance._meta.fields
+                pk_field = next((field for field in fields if field.name ==
+                                related_model_instance._meta.pk.name), fields)
+
+                schema = {
+                    "type": "object",
+                    "required": ["type"],
+                    "additionalProperties": False,
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": _("The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."),
+                            "enum": [resource_name]
+                        },
+                        "id": self._map_model_field(pk_field, direction)
+                        # TODO:
+                        # "links": {
+                        #     "type": "object",
+                        #     "properties": {"self": {"$ref": "#/components/schemas/link"}},
+                        # },
+                    },
+                }
+                if isinstance(field, (ManyToManyField, ManyToOneRel, ManyToManyRel)):
+                    one_of.append({
+                        "type": "array",
+                        "items": schema,
+                    })
+                else:
+                    one_of.append(schema)
+
+            return {
+                "oneOf": one_of
+            }
+
+        return super()._map_serializer(serializer, direction, bypass_extensions)
+
     def _map_basic_serializer(self, serializer, direction):
         # let drf_spectacular do the default drf_spectacular stuff first.
         # It is an performace leak, but for now the only handy way without copy paste all the drf_spectacular code.
         object_schema = super()._map_basic_serializer(
             serializer=serializer, direction=direction)
 
-        # second step; convert the schema to an json:api resource object schema
         json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
             serializer=serializer,
             drf_spectactular_schema=object_schema,
@@ -235,32 +302,35 @@ class JsonApiAutoSchema(AutoSchema):
             content["application/vnd.api+json"]["schema"] = response_component.ref
         return response
 
-    # def _resolve_path_parameters(self, variables):
-    #     result = super()._resolve_path_parameters(variables)
-    #     # If drf-extension package is used and there are nested routes, by default
-    #     # the api paths will shown as /users/{parent_lookup_user_groups}/groups/ for example,
-    #     # where `user_groups` will always be the lookup name of the django foreign key.
+    def _get_relationship_fields(self):
+        base_model_cls = self.view.queryset.model
+        base_model = base_model_cls()
+        related_fields = []
 
-    #     # for json:api it would be better to change it to /users/{UserId}/groups/ (`ResourceType`Id)
-    #     # then an openapi client can combine the parent resource type `User` by it self.
-    #     # Otherwise it would not be possible for the client to determine the path parameter name on the fly...
-    #     # thats why we patch it here for the schema reperesentation.
-    #     nested_path: str = self.path
-    #     for parameter in [parameter for parameter in result if parameter.get("name").startswith(extensions_api_settings.DEFAULT_PARENT_LOOKUP_KWARG_NAME_PREFIX)]:
-    #         old_name = parameter.get("name")
+        # local relation fields
+        for field in base_model._meta.fields:
+            if isinstance(field, (ForeignKey, OneToOneField, ManyToManyField)):
+                related_fields.append((field.name, field))
 
-    #         splitted = nested_path.split(old_name)
-    #         parent_path = splitted[0].replace('{', '')
+        # reverse relations
+        for field_name, rel_type in base_model._meta.fields_map.items():
+            if isinstance(rel_type, (OneToOneRel, ManyToOneRel, ManyToManyRel)):
+                related_fields.append((field_name, rel_type))
 
-    #         match = resolve(parent_path)
-    #         parent_resource_name = get_resource_name(
-    #             context={"view": match.func.cls(action='list')})
+        return related_fields
 
-    #         new_name = f"{parent_resource_name}Id"
-    #         parameter.update({"name": new_name})
+    def _resolve_path_parameters(self, variables):
+        params = super()._resolve_path_parameters(variables)
+        if isinstance(self.view, RelationshipView):
+            related_fields = self._get_relationship_fields()
 
-    #         # has no effect to the global schema...
-    #         # TODO: change the parameter name inside the path
-    #         # self.path = self.path.replace(old_name, new_name)
+            # TODO: there is a function `self.view.get_related_field_name` which returns the concrete name of the related_field
+            # But it will only works if the view is initialized with correct kwargs.
+            related_field_parameter = next(
+                (param for param in params if param["name"] == "related_field"), params)
+            related_field_parameter["schema"]["enum"] = [
+                name for name, field in related_fields]
+            related_field_parameter["description"] = _(
+                "Pass in one of the possible relation types to get all related objects.")
 
-    #     return result
+        return params

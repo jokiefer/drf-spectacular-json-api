@@ -60,13 +60,14 @@ class JsonApiRelationshipObject:
             "description", self.get_default_relation_description())})
         self._schema_meta.update({"title": self.drf_spectacular_field_schema.pop(
             "title", self.get_default_relation_title())})
-        
-        if "readOnly" in self.drf_spectacular_field_schema:
-            self._schema_meta.update({"readOnly": self.drf_spectacular_field_schema.pop("readOnly")})
-        
-        if "nullable" in self.drf_spectacular_field_schema:
-            self._schema_meta.update({"nullable": self.drf_spectacular_field_schema.pop("nullable")})
 
+        if "readOnly" in self.drf_spectacular_field_schema:
+            self._schema_meta.update(
+                {"readOnly": self.drf_spectacular_field_schema.pop("readOnly")})
+
+        if "nullable" in self.drf_spectacular_field_schema:
+            self._schema_meta.update(
+                {"nullable": self.drf_spectacular_field_schema.pop("nullable")})
 
     def patch_type_enum(self) -> None:
         """Resolve the resource type of the serializer and sets the type enum of the resource object schema"""
@@ -197,7 +198,8 @@ class JsonApiResourceObject:
                 relationships[format_field_name(
                     field.field_name)] = self.get_related_field_converter_class()(field=field, drf_spectactular_field_schema=self.drf_spectacular_schema["properties"][field.field_name]).__dict__()
                 if field.required:
-                    required_relationships.append(format_field_name(field.field_name))
+                    required_relationships.append(
+                        format_field_name(field.field_name))
                 continue
 
             if field.required:

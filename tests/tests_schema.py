@@ -43,7 +43,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                 "type": "object",
                 "properties": {
                     "type": {
-                        "allOf": [{"$ref": "#/components/schemas/AlbumTypeEnum"},],
+                        "allOf": [{"$ref": "#/components/schemas/TypeAa3Enum"},],
                         "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
                     },
                     "id": {
@@ -611,5 +611,105 @@ class TestSchemaOutputForNestedResources(SimpleSchemaTestCase):
                 [('description', 'endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter.'), ('explode', False),
                  ('in', 'query'), ('name', 'fields[Song]'), ('schema', [('items', [('enum', ['album', 'created_by', 'length', 'title']), ('type', 'string')]), ('type', 'array')])],
                 [('in', 'path'), ('name', 'AlbumId'), ('required', True), ('schema', [('type', 'string')])]]
+        )
+        self.assertEqual(expected, calculated)
+
+
+class TestSchemaOutputForRelationshipView(SimpleSchemaTestCase):
+
+    def test_relationshipview_get_operation(self):
+        calculated = self.ordered(
+            self.schema["paths"]["/albums/{id}/relationships/{related_field}"]["get"]["parameters"])
+        expected = self.ordered(
+            [
+                [
+                    ('description', 'A UUID string identifying this album.'),
+                    ('in', 'path'),
+                    ('name', 'id'),
+                    ('required', True),
+                    ('schema', [('format', 'uuid'), ('type', 'string')])
+                ],
+                [
+                    ('description', 'Pass in one of the possible relation types to get all related objects.'),
+                    ('in', 'path'),
+                    ('name', 'related_field'),
+                    ('required', True),
+                    ('schema', [('enum', ['single']), ('pattern', '^[-/w]+$'), ('type', 'string')])]
+            ]
+        )
+        self.assertEqual(expected, calculated)
+
+        calculated = self.ordered(
+            self.schema["paths"]["/albums/{id}/relationships/{related_field}"]["get"]["tags"])
+        expected = self.ordered(
+            [
+                "Song",
+                "RelationshipViews"
+            ]
+        )
+        self.assertEqual(expected, calculated)
+
+        calculated = self.ordered(
+            self.schema["paths"]["/songs/{id}/relationships/{related_field}"]["get"]["parameters"])
+        expected = self.ordered(
+            [
+                [
+                    ('description', 'A UUID string identifying this song.'),
+                    ('in', 'path'),
+                    ('name', 'id'),
+                    ('required', True),
+                    ('schema', [('format', 'uuid'), ('type', 'string')])
+                ],
+                [
+                    ('description', 'Pass in one of the possible relation types to get all related objects.'),
+                    ('in', 'path'),
+                    ('name', 'related_field'),
+                    ('required', True),
+                    ('schema', [('enum', ['album', 'created_by']), ('pattern', '^[-/w]+$'), ('type', 'string')])]
+            ]
+        )
+        self.assertEqual(expected, calculated)
+
+        calculated = self.ordered(
+            self.schema["paths"]["/songs/{id}/relationships/{related_field}"]["get"]["tags"])
+        expected = self.ordered(
+            [
+                "Album",
+                "User",
+                "RelationshipViews"
+            ]
+        )
+        self.assertEqual(expected, calculated)
+
+    def test_relationshipview_get_response(self):
+        self.assertEqual(
+            self.schema["paths"]["/albums/{id}/relationships/{related_field}"]["get"][
+                "responses"]["200"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/AlbumRelationShipsResponse"
+        )
+        self.assertEqual(
+            self.schema["components"]["schemas"]["AlbumRelationShipsResponse"]["properties"]["data"]["$ref"],
+            "#/components/schemas/AlbumRelationShips"
+        )
+
+        calculated = self.ordered(
+            self.schema["components"]["schemas"]["AlbumRelationShips"])
+        expected = self.ordered(
+            [('oneOf',
+              [[('items',
+                  [('additionalProperties', False),
+                   ('properties',
+                    [('id', [('format', 'uuid'), ('readOnly', True), ('type', 'string')]),
+                     ('type',
+                      [('description',
+                        'The '
+                        '[type](https://jsonapi.org/format/#document-resource-object-identification) '
+                        'member is used to describe resource objects that share common '
+                        'attributes and relationships.'),
+                       ('enum', ['Song']),
+                          ('type', 'string')])]),
+                      ('required', ['type']),
+                      ('type', 'object')]),
+                  ('type', 'array')]])]
         )
         self.assertEqual(expected, calculated)

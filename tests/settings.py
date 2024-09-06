@@ -1,5 +1,6 @@
 INSTALLED_APPS = (
     'tests',
+    'drf_spectacular'
 )
 
 REST_FRAMEWORK = {
