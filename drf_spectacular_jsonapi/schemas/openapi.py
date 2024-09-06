@@ -145,15 +145,13 @@ class JsonApiAutoSchema(AutoSchema):
             sort_param["explode"] = False
 
     def get_tags(self) -> List[str]:
-        # TODO: add a setting wich allows to configure the behaviour?
         if isinstance(self.view, RelationshipView):
             # RelationshipViews are generic based on the passed `related_field`.
             # So to fully support all the possible related fields, we need to analyze them to get the correct related resource name
-            # TODO:
+
             # 1. get all possible related_field parameters
             # 2. based on the possible related_field parameters (json:api ressources) build the tag array
-            pass
-
+            return [get_resource_type_from_model(field.related_model) for name, field in self._get_relationship_fields()] + ['RelationshipViews']
         else:
             return [get_resource_name(context={"view": self.view})]
 
@@ -225,53 +223,36 @@ class JsonApiAutoSchema(AutoSchema):
                 resource_name = get_resource_type_from_model(
                     field.related_model)
 
+                related_model_instance = field.related_model()
+                fields = related_model_instance._meta.fields
+                pk_field = next((field for field in fields if field.name ==
+                                related_model_instance._meta.pk.name), fields)
+
+                schema = {
+                    "type": "object",
+                    "required": ["type"],
+                    "additionalProperties": False,
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "description": _("The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."),
+                            "enum": [resource_name]
+                        },
+                        "id": self._map_model_field(pk_field, direction)
+                        # TODO:
+                        # "links": {
+                        #     "type": "object",
+                        #     "properties": {"self": {"$ref": "#/components/schemas/link"}},
+                        # },
+                    },
+                }
                 if isinstance(field, (ManyToManyField, ManyToOneRel, ManyToManyRel)):
                     one_of.append({
                         "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": ["type"],
-                            "additionalProperties": False,
-                            "properties": {
-                                "type": {
-                                    "type": "string",
-                                    "description": _("The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."),
-                                    "enum": [resource_name]
-                                },
-                                "id": {
-                                    "type": "string",
-                                    "description": _(f"A unique value identifying this {resource_name}.")
-                                }
-                                # TODO:
-                                # "links": {
-                                #     "type": "object",
-                                #     "properties": {"self": {"$ref": "#/components/schemas/link"}},
-                                # },
-                            },
-                        },
+                        "items": schema,
                     })
                 else:
-                    one_of.append({
-                        "type": "object",
-                        "required": ["type"],
-                        "additionalProperties": False,
-                        "properties": {
-                                "type": {
-                                    "type": "string",
-                                    "description": _("The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."),
-                                    "enum": [resource_name]
-                                },
-                            "id": {
-                                    "type": "string",
-                                    "description": _(f"A unique value identifying this {resource_name}.")
-                                    }
-                            # TODO:
-                            # "links": {
-                            #     "type": "object",
-                            #     "properties": {"self": {"$ref": "#/components/schemas/link"}},
-                            # },
-                        },
-                    })
+                    one_of.append(schema)
 
             return {
                 "oneOf": one_of
@@ -329,8 +310,6 @@ class JsonApiAutoSchema(AutoSchema):
         # local relation fields
         for field in base_model._meta.fields:
             if isinstance(field, (ForeignKey, OneToOneField, ManyToManyField)):
-                if field.name == "album":
-                    i = 0
                 related_fields.append((field.name, field))
 
         # reverse relations
