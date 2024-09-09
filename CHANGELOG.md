@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note that in line with [Django REST framework policy](https://www.django-rest-framework.org/topics/release-notes/),
 any parts of the framework not mentioned in the documentation should generally be considered private API, and may be subject to change.
 
+## [0.5.1] - 2024-09-09
+
+## Fixed
+- inadvertently references tests module 
+
 
 ## [0.5.0] - 2024-09-06
 
