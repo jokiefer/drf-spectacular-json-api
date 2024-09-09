@@ -43,7 +43,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                 "type": "object",
                 "properties": {
                     "type": {
-                        "allOf": [{"$ref": "#/components/schemas/TypeAa3Enum"},],
+                        "allOf": [{"$ref": "#/components/schemas/AlbumTypeEnum"},],
                         "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships.",
                     },
                     "id": {
