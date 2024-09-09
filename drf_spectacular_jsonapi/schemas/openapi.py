@@ -20,7 +20,6 @@ from rest_framework_json_api.views import RelationshipView
 from drf_spectacular_jsonapi.schemas.converters import JsonApiResourceObject
 from drf_spectacular_jsonapi.schemas.plumbing import build_json_api_data_frame
 from drf_spectacular_jsonapi.schemas.utils import get_primary_key_of_serializer
-from tests.views import SongRelationShipView
 
 
 class DjangoJsonApiFilterExtension(DjangoFilterExtension):
