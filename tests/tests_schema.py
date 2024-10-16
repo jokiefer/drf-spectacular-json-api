@@ -121,6 +121,123 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
         )
         self.assertEqual(expected, calculated)
 
+        calculated = self.ordered(
+            self.schema["components"]["schemas"]["Song"])
+
+        expected = self.ordered(
+            {
+                "type": "object",
+                "required": [
+                    "type",
+                    "id"
+                ],
+                "additionalProperties": False,
+                "properties": {
+                    "type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/SongTypeEnum"
+                            }
+                        ],
+                        "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "maxLength": 100
+                            },
+                            "length": {
+                                "type": "integer",
+                                "maximum": 2147483647,
+                                "minimum": -2147483648
+                            }
+                        },
+                        "required": [
+                            "title",
+                            "length"
+                        ]
+                    },
+                    "relationships": {
+                        "type": "object",
+                        "properties": {
+                            "created_by": {
+                                "type": "object",
+                                "properties": {
+                                    "data": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "User"
+                                                ],
+                                                "title": "Resource Type Name",
+                                                "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."
+                                            }
+                                        },
+                                        "required": [
+                                            "id",
+                                            "type"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "data"
+                                ],
+                                "description": "The identifier of the related object.",
+                                "title": "Created By",
+                                "readOnly": True
+                            },
+                            "album": {
+                                "type": "object",
+                                "properties": {
+                                    "data": {
+                                        "type": "object",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "format": "uuid"
+                                            },
+                                            "type": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "Album"
+                                                ],
+                                                "title": "Resource Type Name",
+                                                "description": "The [type](https://jsonapi.org/format/#document-resource-object-identification) member is used to describe resource objects that share common attributes and relationships."
+                                            }
+                                        },
+                                        "required": [
+                                            "id",
+                                            "type"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "data"
+                                ],
+                                "description": "The identifier of the related object.",
+                                "title": "Album"
+                            }
+                        },
+                        "required": [
+                            "album"
+                        ]
+                    }
+                }
+            }
+        )
+        self.assertEqual(expected, calculated)
+
     def test_get_response_body(self):
         self.assertEqual(
             self.schema["paths"]["/albums/"]["get"]["responses"]["200"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
@@ -380,7 +497,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                             }
                                         },
                                         "required": ["data"],
-                                        "title": "Resource Identifier",
+                                        "title": "Album",
                                         "description": "The identifier of the related object.",
                                     },
                                     "created_by": {
@@ -404,7 +521,7 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                                             }
                                         },
                                         "required": ["data"],
-                                        "title": "Resource Identifier",
+                                        "title": "Created By",
                                         "description": "The identifier of the related object.",
                                         "readOnly": True,
                                     }

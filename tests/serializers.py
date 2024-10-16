@@ -16,7 +16,7 @@ class SongSerializer(ModelSerializer):
     """ """
     created_by = ResourceRelatedField(
         model=User,
-        label=_("Created by"),
+        label=_("Created By"),
         help_text=_(
             "The user which created this song"),
         required=False,

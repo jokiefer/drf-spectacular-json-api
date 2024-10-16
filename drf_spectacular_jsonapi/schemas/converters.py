@@ -61,6 +61,9 @@ class JsonApiRelationshipObject:
         self._schema_meta.update({"title": self.drf_spectacular_field_schema.pop(
             "title", self.get_default_relation_title())})
 
+        if self.field.label:
+            self._schema_meta.update({"title": self.field.label})
+
         if "readOnly" in self.drf_spectacular_field_schema:
             self._schema_meta.update(
                 {"readOnly": self.drf_spectacular_field_schema.pop("readOnly")})
