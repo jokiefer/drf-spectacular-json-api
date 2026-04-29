@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from django.db.models.fields.related import (ForeignKey, ManyToManyField,
                                              OneToOneField)
@@ -8,8 +8,10 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.contrib.django_filters import DjangoFilterExtension
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.plumbing import (ResolvedComponent, build_array_type,
-                                      build_parameter_type, is_list_serializer)
+                                      build_parameter_type, force_instance,
+                                      is_list_serializer)
 from rest_framework_json_api.serializers import (
+    ModelSerializer as JsonApiModelSerializer,
     ResourceIdentifierObjectSerializer, SparseFieldsetsMixin)
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
@@ -48,6 +50,31 @@ class JsonApiAutoSchema(AutoSchema):
 
     def get_json_api_resource_object_converter_class(self):
         return self.json_api_resource_object_converter_class
+
+    def is_json_api_resource_serializer(self, serializer: Any) -> bool:
+        """Return True if *serializer* is documented as a JSON:API resource object.
+
+        Resource objects carry ``type``, optional ``id``, ``attributes``, and
+        ``relationships`` per https://jsonapi.org/format/#document-resource-objects.
+        Plain nested objects used only inside ``attributes`` stay as regular
+        JSON Schema objects.
+
+        Default rules (override in a subclass for custom classification):
+
+        - ``rest_framework_json_api.serializers.ModelSerializer`` subclasses
+          are treated as resources (backward compatible with existing schemas).
+        - Serializers whose ``Meta.resource_name`` is set are treated as
+          resources (explicit opt-in for non-model serializers).
+        - Other serializers (for example plain ``rest_framework.serializers.Serializer``)
+          are treated as inline attribute objects.
+        """
+        serializer = force_instance(serializer)
+        if is_list_serializer(serializer):
+            serializer = serializer.child
+        meta = getattr(serializer, "Meta", None)
+        if meta is not None and getattr(meta, "resource_name", None):
+            return True
+        return isinstance(serializer, JsonApiModelSerializer)
 
     def get_operation(self, path, path_regex, path_prefix, method, registry):
         return super().get_operation(path, path_regex, path_prefix, method, registry)
@@ -265,6 +292,9 @@ class JsonApiAutoSchema(AutoSchema):
         object_schema = super()._map_basic_serializer(
             serializer=serializer, direction=direction)
 
+        if not self.is_json_api_resource_serializer(serializer):
+            return object_schema
+
         json_api_resource_object_schema = self.get_json_api_resource_object_converter_class()(
             serializer=serializer,
             drf_spectactular_schema=object_schema,
@@ -279,7 +309,7 @@ class JsonApiAutoSchema(AutoSchema):
             # responses shall not be framed.
             # it is handled by the _get_response_for_code function
             pass
-        else:
+        elif self.is_json_api_resource_serializer(serializer):
             schema = build_json_api_data_frame(schema)
         return schema
 
