@@ -5,6 +5,8 @@ from django.test.testcases import SimpleTestCase
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 
+from drf_spectacular_jsonapi.schemas.pagination import JsonApiPageNumberPagination
+
 
 class SimpleSchemaTestCase(SimpleTestCase):
 
@@ -243,10 +245,37 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
             self.schema["paths"]["/albums/"]["get"]["responses"]["200"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
             "#/components/schemas/PaginatedAlbumList"
         )
+        paginated = self.schema["components"]["schemas"]["PaginatedAlbumList"]
         self.assertEqual(
-            self.schema["components"]["schemas"]["PaginatedAlbumList"]["properties"]["data"]["items"]["$ref"],
+            paginated["properties"]["data"]["items"]["$ref"],
             "#/components/schemas/Album"
         )
+        self.assertEqual(paginated["required"], ["data"])
+        links_schema = paginated["properties"]["links"]
+        self.assertIs(links_schema.get("additionalProperties"), False)
+        link_props = links_schema["properties"]
+        self.assertEqual(
+            set(link_props.keys()),
+            {"first", "last", "next", "prev"},
+        )
+        for key in link_props:
+            self.assertEqual(link_props[key]["type"], "string")
+            self.assertEqual(link_props[key]["format"], "uri")
+            self.assertTrue(link_props[key].get("nullable"))
+            self.assertIn("example", link_props[key])
+        meta_schema = paginated["properties"]["meta"]
+        self.assertIs(meta_schema.get("additionalProperties"), False)
+        pagination_meta = meta_schema["properties"]["pagination"]
+        self.assertIs(pagination_meta.get("additionalProperties"), False)
+        self.assertEqual(
+            set(pagination_meta["properties"].keys()),
+            {"count", "page", "pages"},
+        )
+        self.assertEqual(pagination_meta["properties"]["count"]["type"], "integer")
+        self.assertEqual(pagination_meta["properties"]["page"]["type"], "integer")
+        self.assertEqual(pagination_meta["properties"]["pages"]["type"], "integer")
+        for key in ("count", "page", "pages"):
+            self.assertIn("example", pagination_meta["properties"][key])
 
         self.assertEqual(
             self.schema["paths"]["/albums/{id}/"]["get"]["responses"]["200"]["content"]["application/vnd.api+json"]["schema"]["$ref"],
@@ -639,6 +668,50 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
             }
         )
         self.assertEqual(expected, calculated)
+
+
+class TestJsonApiPageNumberPaginationSchema(SimpleTestCase):
+    """Direct tests for paginated JSON:API document envelope schema."""
+
+    def test_get_paginated_response_schema_matches_embedded_document(self):
+        paginator = JsonApiPageNumberPagination()
+        data_schema = {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/Album"},
+        }
+        envelope = paginator.get_paginated_response_schema(data_schema)
+        self.assertIs(envelope["properties"]["data"], data_schema)
+        self.assertEqual(envelope["required"], ["data"])
+
+        minimal_openapi = {
+            "openapi": "3.0.3",
+            "info": {"title": "t", "version": "1"},
+            "paths": {
+                "/albums/": {
+                    "get": {
+                        "responses": {
+                            "200": {
+                                "description": "OK",
+                                "content": {
+                                    "application/vnd.api+json": {
+                                        "schema": envelope,
+                                    }
+                                },
+                            }
+                        }
+                    }
+                }
+            },
+            "components": {
+                "schemas": {
+                    "Album": {
+                        "type": "object",
+                        "properties": {"type": {"type": "string"}},
+                    }
+                }
+            },
+        }
+        validate_schema(minimal_openapi)
 
 
 class TestSchemaOutputForDifferentIdFieldName(SimpleSchemaTestCase):
