@@ -765,6 +765,40 @@ class TestSchemaOutputForDifferentIdFieldName(SimpleSchemaTestCase):
         self.assertEqual(expected, calculated)
 
 
+class TestEmbeddedAttributeSerializerSchema(SimpleSchemaTestCase):
+    """Non-resource serializers nested under attributes are plain JSON Schema objects."""
+
+    def test_inline_request_component_not_jsonapi_resource_shape(self):
+        emb = self.schema["components"]["schemas"]["EmbeddedDimensionsRequest"]
+        self.assertEqual(emb["type"], "object")
+        self.assertIn("width", emb["properties"])
+        self.assertIn("height", emb["properties"])
+        props = emb["properties"]
+        self.assertNotIn("attributes", emb)
+        self.assertNotIn("relationships", emb)
+        # JSON:API resource identification lives under ``properties``; OpenAPI's
+        # root ``type`` keyword is only the JSON Schema type tag.
+        self.assertNotIn("type", props)
+
+    def test_inline_response_component_not_jsonapi_resource_shape(self):
+        emb = self.schema["components"]["schemas"]["EmbeddedDimensions"]
+        self.assertEqual(emb["type"], "object")
+        self.assertIn("width", emb["properties"])
+        self.assertIn("height", emb["properties"])
+        self.assertNotIn("type", emb["properties"])
+
+    def test_parent_post_request_dimensions_ref_plain_object(self):
+        self.assertEqual(
+            self.schema["paths"]["/albums-with-embedded/"]["post"]["requestBody"][
+                "content"]["application/vnd.api+json"]["schema"]["$ref"],
+            "#/components/schemas/AlbumWithEmbeddedRequest",
+        )
+        dim = self.schema["components"]["schemas"]["AlbumWithEmbeddedRequest"]["properties"][
+            "data"]["properties"]["attributes"]["properties"]["dimensions"]
+        self.assertIn("$ref", dim)
+        self.assertTrue(dim["$ref"].endswith("EmbeddedDimensionsRequest"))
+
+
 class TestSchemaOutputForNestedResources(SimpleSchemaTestCase):
     def test_nested_path_parameter_fix(self):
         calculated = self.ordered(
@@ -783,10 +817,7 @@ class TestSchemaOutputForNestedResources(SimpleSchemaTestCase):
         )
         self.assertEqual(expected, calculated)
 
-    def test_nested_path_parameter_fix(self):
-        f = open("demofile2.txt", "a")
-        f.write(str(self.schema))
-        f.close()
+    def test_nested_path_parameters_songs_as_view(self):
         calculated = self.ordered(
             self.schema["paths"]["/albums/{AlbumId}/songs-as-view/"]["get"]["parameters"])
 

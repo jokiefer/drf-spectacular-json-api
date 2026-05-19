@@ -7,13 +7,25 @@ from rest_framework_json_api.views import (AutoPrefetchMixin, ModelViewSet,
                                            RelationshipView)
 
 from .models import Album, Song, User
-from .serializers import (AlbumSerializer, SongPostOnlySerializer,
-                          SongSerializer, UserSerializer)
+from .serializers import (AlbumSerializer, AlbumWithEmbeddedSerializer,
+                          SongPostOnlySerializer, SongSerializer,
+                          UserSerializer)
 
 
 class AlbumModelViewset(ModelViewSet):
     """ """
     serializer_class = AlbumSerializer
+    queryset = Album.objects.none()
+    search_fields = ("id", "songs",)
+    ordering_fields = ["id", "title"]
+    filterset_fields = {
+        "genre": ["exact"],
+        "title": ["contains"]
+    }
+
+
+class AlbumWithEmbeddedViewset(ModelViewSet):
+    serializer_class = AlbumWithEmbeddedSerializer
     queryset = Album.objects.none()
     search_fields = ("id", "songs",)
     ordering_fields = ["id", "title"]

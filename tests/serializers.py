@@ -1,4 +1,5 @@
 from django.utils.translation import gettext_lazy as _
+from rest_framework import serializers as drf_serializers
 from rest_framework.fields import CharField
 from rest_framework_json_api.relations import ResourceRelatedField
 from rest_framework_json_api.serializers import ModelSerializer
@@ -8,7 +9,9 @@ from .models import Album, Song, User
 __all__ = [
     "SongSerializer",
     "AlbumSerializer",
-    "UserSerializer"
+    "AlbumWithEmbeddedSerializer",
+    "EmbeddedDimensionsSerializer",
+    "UserSerializer",
 ]
 
 
@@ -32,6 +35,13 @@ class SongPostOnlySerializer(SongSerializer):
     pass
 
 
+class EmbeddedDimensionsSerializer(drf_serializers.Serializer):
+    """Plain JSON object nested under JSON:API ``attributes`` (not a resource)."""
+
+    width = drf_serializers.IntegerField()
+    height = drf_serializers.IntegerField()
+
+
 class AlbumSerializer(ModelSerializer):
     """ """
 
@@ -53,6 +63,15 @@ class AlbumSerializer(ModelSerializer):
     class Meta:
         model = Album
         fields = "__all__"
+
+
+class AlbumWithEmbeddedSerializer(AlbumSerializer):
+    """Album JSON:API resource with a nested non-resource object attribute."""
+
+    dimensions = EmbeddedDimensionsSerializer(required=False)
+
+    class Meta(AlbumSerializer.Meta):
+        fields = ("id", "title", "genre", "year", "released", "songs", "dimensions")
 
 
 class PasswordField(CharField):
