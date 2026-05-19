@@ -8,6 +8,16 @@ from rest_framework_json_api.pagination import JsonApiPageNumberPagination
 
 
 def _top_level_link_value(*, example: Any, description_extra: str = "") -> Dict[str, Any]:
+    """helper function to generate schema
+
+    Args:
+        example (Any): example of a valid value of this schema
+        description_extra (str, optional): additional description for the link. Defaults to "".
+
+    Returns:
+        Dict[str, Any]: schema for the link value, which may be a URI string, a link object, or null. OpenAPI 3.0
+    """
+    
     base = (
         "A JSON:API link: URI string, link object, or null. "
         "See https://jsonapi.org/format/#document-links."
