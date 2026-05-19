@@ -14,17 +14,26 @@ Tested with various dependency version
    * - python
      - django
      - drf-spectacular
-   * - 3.8
+   * - 3.10
      - 4.0
      - 0.25.x
-   * - 3.9
+   * - 3.11
      - 4.1
      - 0.26.x
-   * - 3.10
+   * - 3.12
      - 4.2
      - 0.27.x
-   * - 3.11
+   * - 3.13
      - 5.0
+     - 0.28.x
+   * - 3.14
+     - 5.1
+     - 0.29.x
+   * -
+     - 5.2
+     - 
+   * -
+     - 6.0
      - 
 
 Installation
