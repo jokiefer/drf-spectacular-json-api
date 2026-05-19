@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note that in line with [Django REST framework policy](https://www.django-rest-framework.org/topics/release-notes/),
 any parts of the framework not mentioned in the documentation should generally be considered private API, and may be subject to change.
 
+## [0.6.0] - 2026-05-19
+
+## Added
+- #3 document full JSON:API envelope for paginated responses
+
+## Fixed
+- #34 distinguish resource serializers from embedded attribute objects
 
 ## [0.5.2] - 2024-10-16
 
