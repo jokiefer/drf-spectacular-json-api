@@ -4,7 +4,7 @@ from rest_framework.fields import CharField
 from rest_framework_json_api.relations import ResourceRelatedField
 from rest_framework_json_api.serializers import ModelSerializer
 
-from .models import Album, Song, User
+from .models import Album, Song, SpecialSong, User
 
 __all__ = [
     "SongSerializer",
@@ -28,6 +28,22 @@ class SongSerializer(ModelSerializer):
 
     class Meta:
         model = Song
+        fields = "__all__"
+
+
+class SpecialSongSerializer(ModelSerializer):
+    """ """
+    created_by = ResourceRelatedField(
+        model=User,
+        label=_("Created By"),
+        help_text=_(
+            "The user which created this song"),
+        required=False,
+        read_only=True,
+    )
+
+    class Meta:
+        model = SpecialSong
         fields = "__all__"
 
 
@@ -71,7 +87,8 @@ class AlbumWithEmbeddedSerializer(AlbumSerializer):
     dimensions = EmbeddedDimensionsSerializer(required=False)
 
     class Meta(AlbumSerializer.Meta):
-        fields = ("id", "title", "genre", "year", "released", "songs", "dimensions")
+        fields = ("id", "title", "genre", "year",
+                  "released", "songs", "dimensions")
 
 
 class PasswordField(CharField):

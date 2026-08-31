@@ -5,7 +5,8 @@ from django.test.testcases import SimpleTestCase
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 
-from drf_spectacular_jsonapi.schemas.pagination import JsonApiPageNumberPagination
+from drf_spectacular_jsonapi.schemas.pagination import \
+    JsonApiPageNumberPagination
 
 
 class SimpleSchemaTestCase(SimpleTestCase):
@@ -271,9 +272,12 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
             set(pagination_meta["properties"].keys()),
             {"count", "page", "pages"},
         )
-        self.assertEqual(pagination_meta["properties"]["count"]["type"], "integer")
-        self.assertEqual(pagination_meta["properties"]["page"]["type"], "integer")
-        self.assertEqual(pagination_meta["properties"]["pages"]["type"], "integer")
+        self.assertEqual(
+            pagination_meta["properties"]["count"]["type"], "integer")
+        self.assertEqual(
+            pagination_meta["properties"]["page"]["type"], "integer")
+        self.assertEqual(
+            pagination_meta["properties"]["pages"]["type"], "integer")
         for key in ("count", "page", "pages"):
             self.assertIn("example", pagination_meta["properties"][key])
 
@@ -886,7 +890,7 @@ class TestSchemaOutputForRelationshipView(SimpleSchemaTestCase):
                     ('in', 'path'),
                     ('name', 'related_field'),
                     ('required', True),
-                    ('schema', [('enum', ['album', 'created_by']), ('pattern', '^[-/w]+$'), ('type', 'string')])]
+                    ('schema', [('enum', ['album', 'created_by', 'specialsong']), ('pattern', '^[-/w]+$'), ('type', 'string')])]
             ]
         )
         self.assertEqual(expected, calculated)
@@ -897,7 +901,8 @@ class TestSchemaOutputForRelationshipView(SimpleSchemaTestCase):
             [
                 "Album",
                 "User",
-                "RelationshipViews"
+                "RelationshipViews",
+                "SpecialSong"
             ]
         )
         self.assertEqual(expected, calculated)
