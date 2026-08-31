@@ -9,6 +9,13 @@ Note that in line with [Django REST framework policy](https://www.django-rest-fr
 any parts of the framework not mentioned in the documentation should generally be considered private API, and may be subject to change.
 
 
+
+## [0.6.2] - 2026-08-31
+
+## Fixed
+- catches AttributeError on non ModelSerializers
+
+
 ## [0.6.1] - 2026-08-31
 
 ## Fixed
