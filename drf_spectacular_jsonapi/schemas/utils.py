@@ -114,24 +114,28 @@ def get_serializer_pk_field(
     or:
         None
     """
-    model = serializer.Meta.model
-    model_pk = model._meta.pk
 
-    for field_name, serializer_field in serializer.fields.items():
+    try:
+        model = serializer.Meta.model
+        model_pk = model._meta.pk
 
-        # Once a DRF field is bound, `source` normally already contains
-        # field_name when no explicit source was specified.
-        source = serializer_field.source or field_name
+        for field_name, serializer_field in serializer.fields.items():
 
-        model_field = resolve_source_field(model, source)
+            # Once a DRF field is bound, `source` normally already contains
+            # field_name when no explicit source was specified.
+            source = serializer_field.source or field_name
 
-        if model_field is None:
-            continue
+            model_field = resolve_source_field(model, source)
 
-        if is_same_pk_field(model_field, model_pk):
-            return field_name, serializer_field
+            if model_field is None:
+                continue
 
-    return None
+            if is_same_pk_field(model_field, model_pk):
+                return field_name, serializer_field
+
+        return None
+    except AttributeError:
+        return None
 
 
 def get_serializer_pk_field_name(serializer) -> str | None:
