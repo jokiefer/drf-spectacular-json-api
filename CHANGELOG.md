@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Note that in line with [Django REST framework policy](https://www.django-rest-framework.org/topics/release-notes/),
 any parts of the framework not mentioned in the documentation should generally be considered private API, and may be subject to change.
 
+
+## [0.6.1] - 2026-08-31
+
+## Fixed
+- wrong id field name calculation of multi inherited models
+
 ## [0.6.0] - 2026-05-19
 
 ## Added
