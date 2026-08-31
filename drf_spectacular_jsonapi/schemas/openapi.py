@@ -10,8 +10,9 @@ from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.plumbing import (ResolvedComponent, build_array_type,
                                       build_parameter_type, force_instance,
                                       is_list_serializer)
+from rest_framework_json_api.serializers import \
+    ModelSerializer as JsonApiModelSerializer
 from rest_framework_json_api.serializers import (
-    ModelSerializer as JsonApiModelSerializer,
     ResourceIdentifierObjectSerializer, SparseFieldsetsMixin)
 from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_name,
@@ -21,7 +22,7 @@ from rest_framework_json_api.views import RelationshipView
 
 from drf_spectacular_jsonapi.schemas.converters import JsonApiResourceObject
 from drf_spectacular_jsonapi.schemas.plumbing import build_json_api_data_frame
-from drf_spectacular_jsonapi.schemas.utils import get_primary_key_of_serializer
+from drf_spectacular_jsonapi.schemas.utils import get_serializer_pk_field_name
 
 
 class DjangoJsonApiFilterExtension(DjangoFilterExtension):
@@ -215,7 +216,7 @@ class JsonApiAutoSchema(AutoSchema):
                     "endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter."),
             )
             # collect sparrse fieldset and exclude the json:api id field from this lookup
-            for field in list(filter(lambda field: (field.field_name != get_primary_key_of_serializer(serializer)), serializer.fields.values())):
+            for field in list(filter(lambda field: (field.field_name != get_serializer_pk_field_name(serializer)), serializer.fields.values())):
                 fields_parameters[parameter_name, "query"]["schema"]["items"]["enum"].append(
                     format_field_name(field.field_name))
         # TODO: sparse fieldset values for included serializers are also needed

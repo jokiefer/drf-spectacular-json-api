@@ -11,7 +11,7 @@ from rest_framework_json_api.utils import (format_field_name,
                                            get_resource_type_from_serializer)
 
 from drf_spectacular_jsonapi.schemas.plumbing import build_json_api_data_frame
-from drf_spectacular_jsonapi.schemas.utils import get_primary_key_of_serializer
+from drf_spectacular_jsonapi.schemas.utils import get_serializer_pk_field_name
 
 
 class JsonApiRelationshipObject:
@@ -138,7 +138,7 @@ class JsonApiResourceObject:
                 # },
             },
         }
-        self.pk_name = get_primary_key_of_serializer(
+        self.pk_name = get_serializer_pk_field_name(
             serializer=self.serializer)
 
         self.patch()
