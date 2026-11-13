@@ -189,6 +189,81 @@ class JsonApiAutoSchema(AutoSchema):
         else:
             return [get_resource_name(context={"view": self.view})]
 
+    def resolve_included_serializer(self, serializer, field_name):
+        """The serializer one ``included_serializers`` entry points at, or None.
+
+        Entries are read through the mapping itself: ``included_serializers`` is a
+        :class:`rest_framework_json_api.serializers.LazySerializersDict` whose values
+        may be a serializer class, the string ``"self"`` or a dotted import path, and
+        only ``__getitem__`` resolves all three the way the runtime does. An entry which
+        cannot be resolved is not the document's problem: the application could not load
+        it either, were this include path used, so it is warned about through
+        drf-spectacular's own drainage and left out.
+        """
+        included = getattr(serializer, "included_serializers", None)
+        if not included:
+            return None
+        try:
+            included_serializer = force_instance(included[field_name])
+        except (ImportError, AttributeError, TypeError) as error:
+            warn(f"included serializer of '{field_name}' could not be "
+                 f"resolved and is not documented: {error}")
+            return None
+        if not isinstance(included_serializer, BaseSerializer):
+            # an unresolved entry, e.g. a "self" of a plain dict
+            return None
+        return included_serializer
+
+    def walk_included_serializers(self, serializer, prefix=(), on_path=()):
+        """Yield ``(segments, serializer)`` for every ``include`` the document can carry.
+
+        The runtime validates what a client sends by walking it down each serializer's
+        own ``included_serializers``, segment by segment
+        (:meth:`rest_framework_json_api.filters.IncludedResourcesFilter._validate_path`),
+        so the accepted values are the paths of that mapping graph and this walk is the
+        same graph in the same direction. *segments* is the path as a tuple of formatted
+        field names, which joined with ``.`` is what the spec spells
+        (https://jsonapi.org/format/#fetching-includes).
+
+        A serializer already on the path being walked is not descended into again: an
+        include graph may loop (``song -> created_by -> singles -> song``) and the walk
+        has to end somewhere, so it ends where a path would repeat itself. That leaves
+        the simple paths of the graph, which are finite for any serializer graph though
+        an application with a dense one can bound the walk further by overriding here.
+
+        The serializer is None for an entry which could not be resolved; the path itself
+        is still yielded, because the validator only looks up the declared key. Which
+        resources a path actually brings back is one step further: the renderer adds a
+        related resource for a segment it finds as a relationship field of the serializer
+        rendering that level, so a key without such a field is accepted and answers
+        without that resource. That is the library's rule, not one this walk should add:
+        a document which promised only what the renderer delivers would take the promise
+        away from an endpoint whose serializer names the field differently.
+        """
+        included = getattr(serializer, "included_serializers", None)
+        if not included:
+            return
+        for field_name in included:
+            segments = prefix + (format_field_name(field_name=field_name),)
+            included_serializer = self.resolve_included_serializer(
+                serializer, field_name)
+            yield segments, included_serializer
+            if included_serializer is None:
+                continue
+            if included_serializer.__class__ in on_path:
+                continue
+            yield from self.walk_included_serializers(
+                included_serializer, segments,
+                on_path + (included_serializer.__class__,))
+
+    def get_include_paths(self, serializer) -> List[str]:
+        """The values of ``include`` this endpoint accepts, shallowest first."""
+        return [
+            ".".join(segments)
+            for segments, _serializer in self.walk_included_serializers(
+                serializer, on_path=(serializer.__class__,))
+        ]
+
     def get_include_parameter(self):
         include_parameter = {}
         include_enum = []
@@ -203,52 +278,24 @@ class JsonApiAutoSchema(AutoSchema):
                 description=_(
                     "include query parameter to allow the client to customize which related resources should be returned."),
             )
-            for field_name, serializer in serializer.included_serializers.serializers.items():
-                include_enum.append(format_field_name(field_name=field_name))
+            include_enum.extend(self.get_include_paths(serializer))
         return include_parameter
 
     def get_included_serializers(self, serializer) -> List[Any]:
         """Every serializer an ``include`` can add to the document of *serializer*.
 
-        ``include`` paths may nest (``include=author.organization``) and the runtime
-        accepts them by walking down each serializer's own ``included_serializers``
-        (:meth:`rest_framework_json_api.filters.IncludedResourcesFilter._validate_path`),
-        so the resource types a client may address are the transitive closure of that
-        mapping. A serializer is visited once, which is what makes a cycle such as
-        ``song -> created_by -> singles -> song`` terminate.
-
-        Entries are read through the mapping itself: ``included_serializers`` is a
-        :class:`rest_framework_json_api.serializers.LazySerializersDict` whose values
-        may be a serializer class, the string ``"self"`` or a dotted import path, and
-        only ``__getitem__`` resolves all three the way the runtime does.
+        The resource types a client may address are the transitive closure of
+        ``included_serializers``, so this is :meth:`walk_included_serializers` with the
+        paths dropped and each type kept once - see there for the shape of the walk.
         """
         collected: List[Any] = []
         seen = set()
-
-        def walk(current):
-            included = getattr(current, "included_serializers", None)
-            if not included:
-                return
-            for field_name in included:
-                try:
-                    included_serializer = force_instance(included[field_name])
-                except (ImportError, AttributeError, TypeError) as error:
-                    # an entry the application could not load itself, were this
-                    # include path used; the rest of the document stays correct
-                    warn(f"included serializer of '{field_name}' could not be "
-                         f"resolved and is not documented: {error}")
-                    continue
-                if not isinstance(included_serializer, BaseSerializer):
-                    # an unresolved entry, e.g. a "self" of a plain dict
-                    continue
-                if included_serializer.__class__ in seen:
-                    # already collected through another include path
-                    continue
-                seen.add(included_serializer.__class__)
-                collected.append(included_serializer)
-                walk(included_serializer)
-
-        walk(serializer)
+        for _segments, included_serializer in self.walk_included_serializers(
+                serializer, on_path=(serializer.__class__,)):
+            if included_serializer is None or included_serializer.__class__ in seen:
+                continue
+            seen.add(included_serializer.__class__)
+            collected.append(included_serializer)
         return collected
 
     def get_sparse_fieldset_field_names(self, serializer) -> List[str]:
