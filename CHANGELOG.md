@@ -10,6 +10,13 @@ any parts of the framework not mentioned in the documentation should generally b
 
 
 
+## [Unreleased]
+
+## Fixed
+- documents a declared filter's label on the parameter's schema object instead of as a
+  `title` member of the parameter object, which OpenAPI 3.0 does not allow there and
+  which made validators reject the whole generated document (#39)
+
 ## [0.6.2] - 2026-08-31
 
 ## Fixed

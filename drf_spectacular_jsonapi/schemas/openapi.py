@@ -146,7 +146,12 @@ class JsonApiAutoSchema(AutoSchema):
                 title, description = self.get_title_and_description_for_filter_parameter(
                     field_name=field_name)
                 if title:
-                    parameter["title"] = title
+                    # the Parameter Object has no "title" member (OAS 3.0
+                    # forbids it there and spec validators reject the whole
+                    # document); the Schema Object does, and the title
+                    # belongs to the value the parameter carries anyway.
+                    schema = parameter.setdefault("schema", {})
+                    schema["title"] = title
                 if description:
                     parameter["description"] = description
 

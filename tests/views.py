@@ -1,4 +1,6 @@
+import django_filters
 from django.http import Http404
+from django.utils.translation import gettext_lazy as _
 from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_extensions.settings import extensions_api_settings
@@ -97,3 +99,19 @@ class AlbumRelationShipView(RelationshipView):
 
 class SongRelationShipView(RelationshipView):
     queryset = Song.objects
+
+
+class AlbumFilterSet(django_filters.FilterSet):
+    """ declared filter with an explicit label, to test how that label is documented """
+    year = django_filters.NumberFilter(
+        label=_("Wich year this Album represents"))
+
+    class Meta:
+        model = Album
+        fields = ["year"]
+
+
+class AlbumFilteredViewset(ModelViewSet):
+    serializer_class = AlbumSerializer
+    queryset = Album.objects.none()
+    filterset_class = AlbumFilterSet
