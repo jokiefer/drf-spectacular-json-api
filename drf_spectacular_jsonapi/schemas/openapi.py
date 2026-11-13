@@ -6,10 +6,12 @@ from django.db.models.fields.reverse_related import (ManyToManyRel,
                                                      ManyToOneRel)
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.contrib.django_filters import DjangoFilterExtension
+from drf_spectacular.drainage import warn
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.plumbing import (ResolvedComponent, build_array_type,
                                       build_parameter_type, force_instance,
                                       is_list_serializer)
+from rest_framework.serializers import BaseSerializer
 from rest_framework_json_api.serializers import \
     ModelSerializer as JsonApiModelSerializer
 from rest_framework_json_api.serializers import (
@@ -211,14 +213,79 @@ class JsonApiAutoSchema(AutoSchema):
                 include_enum.append(format_field_name(field_name=field_name))
         return include_parameter
 
-    def get_sparse_fieldset_parameters(self):
-        serializer = self._get_serializer()
-        fields_parameters = {}
-        if issubclass(serializer.__class__, SparseFieldsetsMixin):
-            # fields parameters are only possible if the used serialzer inherits from `SparseFieldsetsMixin`
+    def get_included_serializers(self, serializer) -> List[Any]:
+        """Every serializer an ``include`` can add to the document of *serializer*.
+
+        ``include`` paths may nest (``include=author.organization``) and the runtime
+        accepts them by walking down each serializer's own ``included_serializers``
+        (:meth:`rest_framework_json_api.filters.IncludedResourcesFilter._validate_path`),
+        so the resource types a client may address are the transitive closure of that
+        mapping. A serializer is visited once, which is what makes a cycle such as
+        ``song -> created_by -> singles -> song`` terminate.
+
+        Entries are read through the mapping itself: ``included_serializers`` is a
+        :class:`rest_framework_json_api.serializers.LazySerializersDict` whose values
+        may be a serializer class, the string ``"self"`` or a dotted import path, and
+        only ``__getitem__`` resolves all three the way the runtime does.
+        """
+        collected: List[Any] = []
+        seen = set()
+
+        def walk(current):
+            included = getattr(current, "included_serializers", None)
+            if not included:
+                return
+            for field_name in included:
+                try:
+                    included_serializer = force_instance(included[field_name])
+                except (ImportError, AttributeError, TypeError) as error:
+                    # an entry the application could not load itself, were this
+                    # include path used; the rest of the document stays correct
+                    warn(f"included serializer of '{field_name}' could not be "
+                         f"resolved and is not documented: {error}")
+                    continue
+                if not isinstance(included_serializer, BaseSerializer):
+                    # an unresolved entry, e.g. a "self" of a plain dict
+                    continue
+                if included_serializer.__class__ in seen:
+                    # already collected through another include path
+                    continue
+                seen.add(included_serializer.__class__)
+                collected.append(included_serializer)
+                walk(included_serializer)
+
+        walk(serializer)
+        return collected
+
+    def get_sparse_fieldset_field_names(self, serializer) -> List[str]:
+        """The field names a ``fields[TYPE]`` value may carry for *serializer*.
+
+        The json:api ``id`` is rendered whatever a client asks for, so it is not part
+        of the selectable set - the same rule the view's own serializer follows.
+        """
+        return [
+            format_field_name(field.field_name)
+            for field in serializer.fields.values()
+            if field.field_name != get_serializer_pk_field_name(serializer)
+        ]
+
+    def _add_sparse_fieldset_parameter(self, fields_parameters, serializer) -> None:
+        """Document ``fields[<resource type>]`` for one serializer of the document."""
+        if not isinstance(serializer, SparseFieldsetsMixin):
+            # fields parameters are only possible if the used serializer inherits
+            # from `SparseFieldsetsMixin`, because only that one reads the parameter
+            return
+        try:
             resource_type = get_resource_type_from_serializer(serializer)
-            parameter_name = f"fields[{resource_type}]"
-            fields_parameters[parameter_name, "query"] = build_parameter_type(
+        except AttributeError:
+            # a serializer without a resource type is a plain nested object and never
+            # appears in the document as a resource of its own
+            return
+
+        parameter_name = f"fields[{resource_type}]"
+        parameter = fields_parameters.get((parameter_name, "query"))
+        if parameter is None:
+            parameter = build_parameter_type(
                 name=parameter_name,
                 location="query",
                 schema=build_array_type(schema={"type": "string", "enum": []}),
@@ -226,11 +293,31 @@ class JsonApiAutoSchema(AutoSchema):
                 description=_(
                     "endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter."),
             )
-            # collect sparrse fieldset and exclude the json:api id field from this lookup
-            for field in list(filter(lambda field: (field.field_name != get_serializer_pk_field_name(serializer)), serializer.fields.values())):
-                fields_parameters[parameter_name, "query"]["schema"]["items"]["enum"].append(
-                    format_field_name(field.field_name))
-        # TODO: sparse fieldset values for included serializers are also needed
+            fields_parameters[parameter_name, "query"] = parameter
+
+        # more than one include path can reach the same resource type through
+        # different serializers; the parameter is the union of what they accept
+        enum = parameter["schema"]["items"]["enum"]
+        for field_name in self.get_sparse_fieldset_field_names(serializer):
+            if field_name not in enum:
+                enum.append(field_name)
+
+    def get_sparse_fieldset_parameters(self):
+        """Sparse fieldset parameters of everything the response can contain.
+
+        See https://jsonapi.org/format/#fetching-sparse-fieldsets: ``fields[TYPE]``
+        is keyed by resource type, not by the resource the endpoint answers, and
+        :class:`rest_framework_json_api.serializers.SparseFieldsetsMixin` applies it
+        to every serializer that renders - so an included resource is sparse
+        fielded under its own type as well.
+        """
+        serializer = self._get_serializer()
+        fields_parameters = {}
+        # the resource the endpoint answers ...
+        self._add_sparse_fieldset_parameter(fields_parameters, serializer)
+        # ... and every resource an `include` can add next to it
+        for included_serializer in self.get_included_serializers(serializer):
+            self._add_sparse_fieldset_parameter(fields_parameters, included_serializer)
         return fields_parameters
 
     def _process_override_parameters(self, direction="request"):
