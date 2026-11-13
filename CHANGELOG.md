@@ -23,6 +23,20 @@ any parts of the framework not mentioned in the documentation should generally b
   `title` member of the parameter object, which OpenAPI 3.0 does not allow there and
   which made validators reject the whole generated document (#39)
 
+## Changed
+- `python_requires` is `>=3.10` and the Python and Django classifiers name the interpreters
+  and the Django releases `tox.ini` actually runs (it ran 3.10 to 3.14 while the metadata
+  promised 3.7 and up, and said nothing about 3.12 to 3.14); the development status moves to
+  `4 - Beta` (#46)
+
+## Fixed
+- the repository link in the packaging metadata, the title of the long description and a
+  link in the issue template spelled the project name `drf-spectecular-json-api`, one letter
+  off, so the Homepage link on the package's PyPI page named a repository that does not
+  exist (#46)
+- `requirements/base.txt` asked for `drf-spectacular>=0.26.1` where `setup.py` and the test
+  matrix state `0.25` as the floor; it is `>=0.25.0` in both now (#46)
+
 ## [0.6.2] - 2026-08-31
 
 ## Fixed

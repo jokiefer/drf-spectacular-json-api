@@ -1,5 +1,5 @@
 ========================
-drf-spectecular-json-api
+drf-spectacular-json-api
 ========================
 
 open api 3 schema generator for `drf-json-api <https://github.com/django-json-api/django-rest-framework-json-api>`_ package based on `drf-spectacular <https://github.com/tfranzel/drf-spectacular>`__ package.
