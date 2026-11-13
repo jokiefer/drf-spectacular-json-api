@@ -10,8 +10,8 @@ from rest_framework_json_api.views import (AutoPrefetchMixin, ModelViewSet,
 
 from .models import Album, Song, User
 from .serializers import (AlbumSerializer, AlbumWithEmbeddedSerializer,
-                          SongPostOnlySerializer, SongSerializer,
-                          UserSerializer)
+                          AlbumWithNestedIncludesSerializer, SongPostOnlySerializer,
+                          SongSerializer, UserSerializer)
 
 
 class AlbumModelViewset(ModelViewSet):
@@ -48,6 +48,12 @@ class SongModelViewsetPostOnly(ModelViewSet):
     serializer_class = SongPostOnlySerializer
     queryset = Song.objects.none()
     http_method_names = ["post"]
+
+
+class AlbumWithNestedIncludesViewset(ModelViewSet):
+    """ """
+    serializer_class = AlbumWithNestedIncludesSerializer
+    queryset = Album.objects.none()
 
 
 class UserModelViewset(ModelViewSet):

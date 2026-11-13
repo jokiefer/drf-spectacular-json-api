@@ -2,13 +2,17 @@ import json
 
 import rest_framework_json_api
 from django.test.testcases import SimpleTestCase
+from django.urls import path
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 from rest_framework.routers import SimpleRouter
 
 from drf_spectacular_jsonapi.schemas.pagination import \
     JsonApiPageNumberPagination
-from tests.views import AlbumFilteredViewset
+from tests.serializers import (AlbumWithNestedIncludesSerializer,
+                               SongWithCreatorSerializer)
+from tests.views import (AlbumFilteredViewset, AlbumModelViewset,
+                         AlbumWithNestedIncludesViewset, SongModelViewset)
 
 
 class SimpleSchemaTestCase(SimpleTestCase):
@@ -324,6 +328,16 @@ class TestSchemaOutputForSimpleModelSerializer(SimpleSchemaTestCase):
                 'in': 'query',
                 'name': 'fields[Album]',
                 'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['songs', 'title', 'genre', 'year', 'released']}},
+                'description': 'endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter.',
+                'explode': False
+            },
+            {
+                # `include=songs` puts Song resources into the same document, and
+                # sparse fieldsets are keyed by resource type, so the included
+                # resource is documented with a parameter of its own
+                'in': 'query',
+                'name': 'fields[Song]',
+                'schema': {'type': 'array', 'items': {'type': 'string', 'enum': ['album', 'created_by', 'length', 'title']}},
                 'description': 'endpoint return only specific fields in the response on a per-type basis by including a fields[TYPE] query parameter.',
                 'explode': False
             },
@@ -959,7 +973,7 @@ class TestOasValidityOfFilterParameterTitle(SimpleSchemaTestCase):
         self.schema = generator.get_schema(request=None, public=True)
 
     def all_parameters(self):
-        for path, path_item in self.schema["paths"].items():
+        for url, path_item in self.schema["paths"].items():
             for member, value in path_item.items():
                 if member == "parameters":
                     for parameter in value:
@@ -982,3 +996,116 @@ class TestOasValidityOfFilterParameterTitle(SimpleSchemaTestCase):
 
     def test_the_document_validates(self):
         validate_schema(self.schema)
+
+
+class TestSparseFieldsetsOfIncludedResources(SimpleSchemaTestCase):
+    """
+    A sparse fieldset is keyed by resource type, not by the resource the endpoint
+    answers: ``SparseFieldsetsMixin`` reads ``fields[TYPE]`` for every serializer that
+    renders, so a resource which only arrives through ``include`` is narrowed down by
+    a parameter of its own and must be documented with one.
+
+    See https://jsonapi.org/format/#fetching-sparse-fieldsets
+    """
+
+    def setUp(self) -> None:
+        self.maxDiff = None
+        router = SimpleRouter()
+        # songs -> created_by: User is only reachable through a nested include path
+        router.register(
+            "deep-albums", AlbumWithNestedIncludesViewset, basename="deep-album")
+        # songs only: nothing beyond the first include level
+        router.register("plain-albums", AlbumModelViewset, basename="plain-album")
+        # no included_serializers at all
+        router.register("songs", SongModelViewset, basename="song")
+        generator = SchemaGenerator(patterns=router.urls)
+        self.schema = generator.get_schema(request=None, public=True)
+        validate_schema(self.schema)
+
+    def sparse_fieldsets(self, path, schema=None):
+        """the `fields[TYPE]` parameters of an operation, keyed by resource type"""
+        parameters = (schema or self.schema)["paths"][path]["get"]["parameters"]
+        return {
+            parameter["name"][len("fields["):-len("]")]: parameter
+            for parameter in parameters
+            if parameter["name"].startswith("fields[")
+        }
+
+    def enum_of(self, parameters, resource_type):
+        return parameters[resource_type]["schema"]["items"]["enum"]
+
+    def test_resource_reached_by_a_nested_include_gets_its_own_parameter(self):
+        parameters = self.sparse_fieldsets("/deep-albums/")
+
+        self.assertEqual({"Album", "Song", "User"}, set(parameters))
+        # the parameter the endpoint answered with is untouched by the fix
+        self.assertEqual(
+            ['songs', 'title', 'genre', 'year', 'released'],
+            self.enum_of(parameters, "Album"))
+
+    def test_included_resource_is_documented_with_its_own_fields(self):
+        parameters = self.sparse_fieldsets("/deep-albums/")
+
+        # the enum carries the serializer's fields, in its order; that order is not
+        # what a client may or may not send, so it is not what this test is about
+        self.assertEqual(
+            {'album', 'created_by', 'length', 'title'},
+            set(self.enum_of(parameters, "Song")))
+        # the id of a resource is rendered whatever a client asks for, so the user's
+        # primary key is not a selectable field
+        self.assertEqual(['password'], self.enum_of(parameters, "User"))
+
+    def test_first_include_level_alone_is_documented_without_the_second_level(self):
+        parameters = self.sparse_fieldsets("/plain-albums/")
+
+        self.assertEqual({"Album", "Song"}, set(parameters))
+
+    def test_endpoint_without_includes_documents_no_foreign_resource(self):
+        parameters = self.sparse_fieldsets("/songs/")
+
+        self.assertEqual({"Song"}, set(parameters))
+
+    def test_a_resource_type_reached_twice_is_documented_once(self):
+        """the include graph here loops: song -> created_by -> singles -> song"""
+        parameters = [
+            parameter
+            for parameter in self.schema["paths"]["/deep-albums/"]["get"]["parameters"]
+            if parameter["name"].startswith("fields[")
+        ]
+        names = [parameter["name"] for parameter in parameters]
+
+        self.assertEqual(len(names), len(set(names)))
+        for parameter in parameters:
+            enum = parameter["schema"]["items"]["enum"]
+            self.assertEqual(len(enum), len(set(enum)),
+                             f"{parameter['name']} documents a field twice")
+
+    def test_an_include_that_cannot_be_resolved_costs_its_own_parameter_only(self):
+        """a dotted include path may name a serializer the project cannot import"""
+
+        class AlbumWithUnresolvableIncludeSerializer(
+                AlbumWithNestedIncludesSerializer):
+            included_serializers = {
+                "songs": SongWithCreatorSerializer,
+                "phantom": "tests.serializers.ThereIsNoSuchSerializer",
+            }
+
+        viewset = AlbumWithNestedIncludesViewset.as_view(
+            {"get": "list"},
+            serializer_class=AlbumWithUnresolvableIncludeSerializer)
+        generator = SchemaGenerator(patterns=[
+            path("unresolvable-albums/", viewset, name="unresolvable-album"),
+        ])
+        schema = generator.get_schema(request=None, public=True)
+
+        # the rest of the graph is documented as if nothing happened, and so is the
+        # document itself: only the entry which cannot be loaded is missing
+        self.assertEqual(
+            {"Album", "Song", "User"},
+            set(self.sparse_fieldsets("/unresolvable-albums/", schema)))
+        include = next(
+            parameter for parameter
+            in schema["paths"]["/unresolvable-albums/"]["get"]["parameters"]
+            if parameter["name"] == "include")
+        self.assertIn("phantom", include["schema"]["items"]["enum"])
+        validate_schema(schema)
