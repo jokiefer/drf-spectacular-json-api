@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Tuple
 from django.db.models.fields.related import (ForeignKey, ManyToManyField,
                                              OneToOneField)
 from django.db.models.fields.reverse_related import (ManyToManyRel,
-                                                     ManyToOneRel, OneToOneRel)
+                                                     ManyToOneRel)
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.contrib.django_filters import DjangoFilterExtension
 from drf_spectacular.openapi import AutoSchema
@@ -15,6 +15,7 @@ from rest_framework_json_api.serializers import \
 from rest_framework_json_api.serializers import (
     ResourceIdentifierObjectSerializer, SparseFieldsetsMixin)
 from rest_framework_json_api.utils import (format_field_name,
+                                           format_link_segment,
                                            get_resource_name,
                                            get_resource_type_from_model,
                                            get_resource_type_from_serializer)
@@ -183,7 +184,12 @@ class JsonApiAutoSchema(AutoSchema):
 
             # 1. get all possible related_field parameters
             # 2. based on the possible related_field parameters (json:api ressources) build the tag array
-            return [get_resource_type_from_model(field.related_model) for name, field in self._get_relationship_fields()] + ['RelationshipViews']
+            # two relations can point at the same resource type, and a view may offer
+            # one relation under two segments; a type is tagged once
+            return list(dict.fromkeys(
+                get_resource_type_from_model(field.related_model)
+                for name, field in self._get_relationship_fields()
+            )) + ['RelationshipViews']
         else:
             return [get_resource_name(context={"view": self.view})]
 
@@ -338,19 +344,55 @@ class JsonApiAutoSchema(AutoSchema):
         return response
 
     def _get_relationship_fields(self):
-        base_model_cls = self.view.queryset.model
-        base_model = base_model_cls()
-        related_fields = []
+        """The relation names of the view's model, spelled as the URL asks for them.
 
-        # local relation fields
+        :meth:`rest_framework_json_api.views.RelationshipView.get_related_instance`
+        resolves the path segment against an instance of the model::
+
+            getattr(self.get_object(), self.get_related_field_name())
+
+        and an attribute it does not find is a 404. So the only names which may be
+        documented as this view's ``related_field`` enum are the model's own attribute
+        names, transformed by :func:`rest_framework_json_api.utils.format_link_segment`
+        - the inverse of the ``undo_format_link_segment`` the view applies to what the
+        client sent. Any other spelling is a documented value the server refuses.
+        """
+        base_model = self.view.queryset.model()
+        relations = {}
+
+        # local relation fields: a field's name is the attribute it is reached by
         for field in base_model._meta.fields:
             if isinstance(field, (ForeignKey, OneToOneField, ManyToManyField)):
-                related_fields.append((field.name, field))
+                relations[field.name] = field
 
-        # reverse relations
-        for field_name, rel_type in base_model._meta.fields_map.items():
-            if isinstance(rel_type, (OneToOneRel, ManyToOneRel, ManyToManyRel)):
-                related_fields.append((field_name, rel_type))
+        # reverse relations: explicitly not the keys of `_meta.fields_map`, which are
+        # the *query* names and agree with the accessor only by accident. `Song.album`
+        # declares `related_name = "singles"` and `related_query_name = "single"`, so
+        # the relation is reached as `album.singles` and filtered as
+        # `Song.objects.filter(single=...)` - of the two, only the first is an
+        # attribute the view can resolve.
+        for relation in base_model._meta.related_objects:
+            if getattr(relation, "parent_link", False):
+                # the link of a multi table inheritance child: declared by the child,
+                # so it is an attribute of the child, never of the model documented here
+                continue
+            accessor_name = relation.get_accessor_name()
+            if accessor_name.startswith("+"):
+                # `related_name="+"` keeps the relation off the reverse side, which
+                # leaves no attribute to address and therefore no relationship
+                continue
+            relations[accessor_name] = relation
+
+        related_fields = [
+            (format_link_segment(attribute), relation)
+            for attribute, relation in relations.items()
+        ]
+
+        # a view may offer an attribute under another segment; the mapping is spelled
+        # {segment: attribute} and is consulted before the name is used as an attribute
+        for segment, attribute in self.view.field_name_mapping.items():
+            if attribute in relations:
+                related_fields.append((format_link_segment(segment), relations[attribute]))
 
         return related_fields
 
@@ -363,8 +405,8 @@ class JsonApiAutoSchema(AutoSchema):
             # But it will only works if the view is initialized with correct kwargs.
             related_field_parameter = next(
                 (param for param in params if param["name"] == "related_field"), params)
-            related_field_parameter["schema"]["enum"] = [
-                name for name, field in related_fields]
+            related_field_parameter["schema"]["enum"] = list(dict.fromkeys(
+                name for name, field in related_fields))
             related_field_parameter["description"] = _(
                 "Pass in one of the possible relation types to get all related objects.")
 

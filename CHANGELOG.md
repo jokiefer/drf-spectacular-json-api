@@ -16,6 +16,13 @@ any parts of the framework not mentioned in the documentation should generally b
 - documents a declared filter's label on the parameter's schema object instead of as a
   `title` member of the parameter object, which OpenAPI 3.0 does not allow there and
   which made validators reject the whole generated document (#39)
+- documents a relationship under the name the server resolves it under. A
+  `RelationshipView` looks the `related_field` segment up with `getattr` on an instance
+  of the model, so a reverse relation is addressed by its accessor (`singles`), not by
+  the query name (`single`) this version took from `_meta.fields_map`; the link of a
+  multi table inheritance child is left out, because it is an attribute of the child and
+  never of the documented parent. Every value the enum now lists answers the request
+  instead of answering 404 (#42)
 
 ## [0.6.2] - 2026-08-31
 
