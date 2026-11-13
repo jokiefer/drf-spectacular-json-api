@@ -4,9 +4,11 @@ import rest_framework_json_api
 from django.test.testcases import SimpleTestCase
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
+from rest_framework.routers import SimpleRouter
 
 from drf_spectacular_jsonapi.schemas.pagination import \
     JsonApiPageNumberPagination
+from tests.views import AlbumFilteredViewset
 
 
 class SimpleSchemaTestCase(SimpleTestCase):
@@ -939,3 +941,44 @@ class TestSchemaOutputForRelationshipView(SimpleSchemaTestCase):
                   ('type', 'array')]])]
         )
         self.assertEqual(expected, calculated)
+
+
+class TestOasValidityOfFilterParameterTitle(SimpleSchemaTestCase):
+    """
+    A declared filter's label is documented on the parameter. It must not become a
+    "title" member of the Parameter Object, because OAS 3.0 has no such member there
+    and spec validators reject the whole document because of it.
+    """
+
+    def setUp(self) -> None:
+        self.maxDiff = None
+        router = SimpleRouter()
+        router.register(
+            "filtered-albums", AlbumFilteredViewset, basename="filtered-album")
+        generator = SchemaGenerator(patterns=router.urls)
+        self.schema = generator.get_schema(request=None, public=True)
+
+    def all_parameters(self):
+        for path, path_item in self.schema["paths"].items():
+            for member, value in path_item.items():
+                if member == "parameters":
+                    for parameter in value:
+                        yield parameter
+                elif isinstance(value, dict):
+                    for parameter in value.get("parameters", []):
+                        yield parameter
+
+    def test_filter_label_is_documented_on_the_parameter_schema(self):
+        parameters = self.schema["paths"]["/filtered-albums/"]["get"]["parameters"]
+        parameter = [p for p in parameters if p["name"] == "filter[year]"][0]
+
+        self.assertEqual(
+            parameter["schema"]["title"], "Wich year this Album represents")
+        self.assertNotIn("title", parameter)
+
+    def test_no_parameter_object_carries_a_title(self):
+        for parameter in self.all_parameters():
+            self.assertNotIn("title", parameter)
+
+    def test_the_document_validates(self):
+        validate_schema(self.schema)
