@@ -12,6 +12,12 @@ any parts of the framework not mentioned in the documentation should generally b
 
 ## [Unreleased]
 
+## Added
+- documents a sparse fieldset parameter (`fields[TYPE]`) for every resource an `include`
+  can add to the document, instead of only for the resource the endpoint answers with.
+  `SparseFieldsetsMixin` applies the parameter to every serializer that renders, so an
+  included resource is narrowed down under its own type (#30)
+
 ## Fixed
 - documents a declared filter's label on the parameter's schema object instead of as a
   `title` member of the parameter object, which OpenAPI 3.0 does not allow there and

@@ -12,6 +12,9 @@ __all__ = [
     "AlbumWithEmbeddedSerializer",
     "EmbeddedDimensionsSerializer",
     "UserSerializer",
+    "UserWithSongsSerializer",
+    "SongWithCreatorSerializer",
+    "AlbumWithNestedIncludesSerializer",
 ]
 
 
@@ -105,3 +108,38 @@ class UserSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = "__all__"
+
+
+class SongWithCreatorSerializer(SongSerializer):
+    """Song which can be narrowed down to its creator, and that creator to his songs.
+
+    The two serializers point at each other on purpose: ``song -> created_by ->
+    singles -> song`` is the ordinary shape of a json:api graph, and a schema
+    generator must not walk in circles over it. Both entries are written the way the
+    library allows them to be written, once as a class and once as a dotted path.
+    """
+
+    included_serializers = {
+        "created_by": "tests.serializers.UserWithSongsSerializer"
+    }
+
+
+class UserWithSongsSerializer(UserSerializer):
+    """User whose own songs are includeable through the reverse relation."""
+
+    included_serializers = {
+        "singles": SongWithCreatorSerializer
+    }
+
+
+class AlbumWithNestedIncludesSerializer(AlbumSerializer):
+    """Album whose songs are includeable and whose songs' creators are too.
+
+    ``User`` is only reachable through the nested include path
+    ``songs.created_by``, which is where an included resource stops being one level
+    away from the endpoint.
+    """
+
+    included_serializers = {
+        "songs": SongWithCreatorSerializer
+    }
