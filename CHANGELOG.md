@@ -18,11 +18,6 @@ any parts of the framework not mentioned in the documentation should generally b
   `SparseFieldsetsMixin` applies the parameter to every serializer that renders, so an
   included resource is narrowed down under its own type (#30)
 
-## Fixed
-- documents a declared filter's label on the parameter's schema object instead of as a
-  `title` member of the parameter object, which OpenAPI 3.0 does not allow there and
-  which made validators reject the whole generated document (#39)
-
 ## Changed
 - `python_requires` is `>=3.10` and the Python and Django classifiers name the interpreters
   and the Django releases `tox.ini` actually runs (it ran 3.10 to 3.14 while the metadata
@@ -30,6 +25,9 @@ any parts of the framework not mentioned in the documentation should generally b
   `4 - Beta` (#46)
 
 ## Fixed
+- documents a declared filter's label on the parameter's schema object instead of as a
+  `title` member of the parameter object, which OpenAPI 3.0 does not allow there and
+  which made validators reject the whole generated document (#39)
 - the repository link in the packaging metadata, the title of the long description and a
   link in the issue template spelled the project name `drf-spectecular-json-api`, one letter
   off, so the Homepage link on the package's PyPI page named a repository that does not
