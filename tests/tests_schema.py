@@ -1069,11 +1069,11 @@ class TestRelationshipFieldNamesResolveAgainstTheModel(SimpleSchemaTestCase):
         `get_related_field_name` undoes the URL's link formatting and consults
         `field_name_mapping`, which is exactly what happens in the request.
         """
-        for path, (view_class, model) in self.relationship_paths.items():
+        for url, (view_class, model) in self.relationship_paths.items():
             view = view_class()
-            for value in self.documented_values(path):
+            for value in self.documented_values(url):
                 view.kwargs = {"related_field": value}
-                with self.subTest(path=path, related_field=value):
+                with self.subTest(url=url, related_field=value):
                     self.assertIn(
                         view.get_related_field_name(),
                         self.relation_attributes_of(model))
