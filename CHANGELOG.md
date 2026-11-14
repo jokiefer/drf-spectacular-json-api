@@ -10,7 +10,7 @@ any parts of the framework not mentioned in the documentation should generally b
 
 
 
-## [Unreleased]
+## [0.7.0] - 2026-11-13
 
 ## Added
 - documents a sparse fieldset parameter (`fields[TYPE]`) for every resource an `include`
