@@ -1,0 +1,84 @@
+name: Test suite
+
+# the tests of this repository only ran on a release: `publish.yml` triggers on a
+# published release and its matrix is `tox -e py` with whatever pip resolves today. So a
+# pull request could not learn whether it broke the oldest Django it supports, and a
+# green release only ever meant "green with the newest dependencies".
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  # what pip resolves today, on each interpreter the package claims - the gate a release
+  # already passes, moved to where a pull request can see it
+  current:
+    name: current dependencies on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install tox
+      - name: Run tests
+        # tox -e py is not in tox.ini's envlist: tox builds that name from the running
+        # interpreter, which is how one matrix row reaches one environment
+        run: tox -e py
+
+  # the corners of the 175 environments tox.ini declares. Chosen as the oldest and the
+  # newest drf-spectacular against the oldest and the newest Django each interpreter can
+  # install: `pip install --dry-run --python-version <x> --only-binary=:all:` of the
+  # environment's pins resolves for every row below, and refuses Django 6.0 on Python
+  # 3.10 and 3.11, which is why those corners are missing from tox's matrix in practice.
+  # Django 4.0 on Python 3.14 resolves too but is left out: Django 4.0 has never declared
+  # support for an interpreter that new, so a failure there would not be this package's.
+  supported:
+    name: Django ${{ matrix.django-version }} / drf-spectacular 0.${{ matrix.spectacular-version }} on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.10"
+            tox-python: py310
+            django-version: "40"
+            spectacular-version: "25"
+          - python-version: "3.10"
+            tox-python: py310
+            django-version: "52"
+            spectacular-version: "29"
+          - python-version: "3.12"
+            tox-python: py312
+            django-version: "42"
+            spectacular-version: "25"
+          - python-version: "3.13"
+            tox-python: py313
+            django-version: "52"
+            spectacular-version: "25"
+          - python-version: "3.12"
+            tox-python: py312
+            django-version: "60"
+            spectacular-version: "29"
+          - python-version: "3.14"
+            tox-python: py314
+            django-version: "60"
+            spectacular-version: "29"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install tox
+      - name: Run tests
+        # the name is one of tox -l's, so the factors of tox.ini do the pinning
+        run: >
+          tox -e
+          ${{ matrix.tox-python }}-django${{ matrix.django-version }}-drf-spectacular${{ matrix.spectacular-version }}

@@ -28,6 +28,13 @@ any parts of the framework not mentioned in the documentation should generally b
 - documents a declared filter's label on the parameter's schema object instead of as a
   `title` member of the parameter object, which OpenAPI 3.0 does not allow there and
   which made validators reject the whole generated document (#39)
+- documents a relationship under the name the server resolves it under. A
+  `RelationshipView` looks the `related_field` segment up with `getattr` on an instance
+  of the model, so a reverse relation is addressed by its accessor (`singles`), not by
+  the query name (`single`) this version took from `_meta.fields_map`; the link of a
+  multi table inheritance child is left out, because it is an attribute of the child and
+  never of the documented parent. Every value the enum now lists answers the request
+  instead of answering 404 (#42)
 - the repository link in the packaging metadata, the title of the long description and a
   link in the issue template spelled the project name `drf-spectecular-json-api`, one letter
   off, so the Homepage link on the package's PyPI page named a repository that does not
