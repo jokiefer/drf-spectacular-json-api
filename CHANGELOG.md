@@ -17,6 +17,11 @@ any parts of the framework not mentioned in the documentation should generally b
   can add to the document, instead of only for the resource the endpoint answers with.
   `SparseFieldsetsMixin` applies the parameter to every serializer that renders, so an
   included resource is narrowed down under its own type (#30)
+- enumerates the nested `include` paths an endpoint accepts (`songs.created_by`), not
+  only the first level. `IncludedResourcesFilter` validates an include value by walking
+  it segment by segment down each serializer's own `included_serializers`, so a resource
+  which is two hops away was reachable by the server but undiscoverable in the document
+  (#44)
 
 ## Fixed
 - documents a declared filter's label on the parameter's schema object instead of as a

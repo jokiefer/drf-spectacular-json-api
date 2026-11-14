@@ -1,16 +1,28 @@
 import json
+from unittest import skipUnless
 
 import rest_framework_json_api
 from django.test.testcases import SimpleTestCase
 from django.urls import path, re_path
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
+from rest_framework.exceptions import ParseError
 from rest_framework.routers import SimpleRouter
+# the filter which validates an include value arrived with djangorestframework-jsonapi
+# 9.0.0, a package asking for Python 3.11 and Django 5.2; the test matrix installs older
+# ones too and there the parameter is not validated at all. The module has to import on
+# those, so the name is here optional and only the tests comparing the documented paths
+# with what the server accepts ask for it.
+try:
+    from rest_framework_json_api.filters import IncludedResourcesFilter
+except ImportError:
+    IncludedResourcesFilter = None
 
 from drf_spectacular_jsonapi.schemas.pagination import \
     JsonApiPageNumberPagination
 from tests.models import Album, Song
-from tests.serializers import (AlbumWithNestedIncludesSerializer,
+from tests.serializers import (AlbumSerializer,
+                               AlbumWithNestedIncludesSerializer,
                                SongWithCreatorSerializer)
 from tests.views import (AlbumFilteredViewset, AlbumModelViewset,
                          AlbumRelationShipView, AlbumWithNestedIncludesViewset,
@@ -1215,3 +1227,80 @@ class TestSparseFieldsetsOfIncludedResources(SimpleSchemaTestCase):
             if parameter["name"] == "include")
         self.assertIn("phantom", include["schema"]["items"]["enum"])
         validate_schema(schema)
+
+
+class TestNestedIncludePaths(SimpleSchemaTestCase):
+    """
+    `include` values are paths:
+    :meth:`rest_framework_json_api.filters.IncludedResourcesFilter._validate_path`
+    splits what the client sends on ``.`` and walks it down each serializer's own
+    ``included_serializers``, so a resource two hops away is reached by a two segment
+    value. Enumerating only the declared keys of the first serializer hides everything
+    below the first hop - and the enum is the only place a code generator or a Swagger
+    UI looks for choices.
+
+    See https://jsonapi.org/format/#fetching-includes
+    """
+
+    NO_RUNTIME_VALIDATOR = (
+        "djangorestframework-jsonapi %s is installed and that one does not validate the "
+        "include parameter, the filter doing it arrived with its 9.0.0"
+        % rest_framework_json_api.VERSION)
+
+    def setUp(self) -> None:
+        self.maxDiff = None
+        router = SimpleRouter()
+        # songs -> created_by -> singles -> songs: two levels below the endpoint, and a
+        # cycle, which is the ordinary shape of a json:api graph
+        router.register(
+            "deep-albums", AlbumWithNestedIncludesViewset, basename="deep-album")
+        # songs, and that song serializer includes nothing of its own
+        router.register("plain-albums", AlbumModelViewset, basename="plain-album")
+        generator = SchemaGenerator(patterns=router.urls)
+        self.schema = generator.get_schema(request=None, public=True)
+        validate_schema(self.schema)
+
+    def include_values(self, path):
+        parameters = self.schema["paths"][path]["get"]["parameters"]
+        parameter = next(
+            parameter for parameter in parameters
+            if parameter["name"] == "include")
+        return parameter["schema"]["items"]["enum"]
+
+    def test_a_resource_beyond_the_first_hop_is_reachable_by_a_path(self):
+        values = self.include_values("/deep-albums/")
+
+        self.assertEqual(
+            {"songs", "songs.created_by", "songs.created_by.singles"}, set(values))
+
+    def test_the_path_of_a_cycle_is_walked_up_to_the_point_where_it_closes(self):
+        values = self.include_values("/deep-albums/")
+
+        # `singles` leads back to the song serializer; from there every path would be
+        # one of the ones above with a prefix already spoken for, so the walk stops
+        self.assertNotIn("songs.created_by.singles.created_by", values)
+
+    def test_a_hop_without_included_serializers_invents_no_paths(self):
+        self.assertEqual(["songs"], self.include_values("/plain-albums/"))
+
+    @skipUnless(IncludedResourcesFilter is not None, NO_RUNTIME_VALIDATOR)
+    def test_every_documented_path_is_accepted_by_the_runtime_validator(self):
+        """Checked with the validator itself rather than with a copy of its walk."""
+        validator = IncludedResourcesFilter()
+        for url, serializer_class in (
+                ("/deep-albums/", AlbumWithNestedIncludesSerializer),
+                ("/plain-albums/", AlbumSerializer)):
+            for value in self.include_values(url):
+                with self.subTest(url=url, include=value):
+                    validator._validate_path(
+                        serializer_class, value.split("."), value)
+
+    def test_a_path_the_graph_does_not_have_is_documented_neither(self):
+        self.assertNotIn(
+            "songs.created_by", self.include_values("/plain-albums/"))
+
+    @skipUnless(IncludedResourcesFilter is not None, NO_RUNTIME_VALIDATOR)
+    def test_a_path_the_graph_does_not_have_is_rejected_by_the_validator(self):
+        with self.assertRaises(ParseError):
+            IncludedResourcesFilter()._validate_path(
+                AlbumSerializer, ["songs", "created_by"], "songs.created_by")
