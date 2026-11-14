@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 
 from .views import (AlbumModelViewset, AlbumRelationShipView,
@@ -29,15 +29,17 @@ urlpatterns = [
     path(r"albums/{parent_lookup_album}/songs-as-view/",
          NestedSongModelViewset.as_view({"get": "list"})
          ),
-    path(
-        r'^albums/(?P<pk>[^/.]+)/relationships/(?P<related_field>[-/w]+)$',
+    # relationship routes: `re_path` because the segment is matched by a regex, and
+    # each route needs its own name so that the two can be told apart by reverse()
+    re_path(
+        r'^albums/(?P<pk>[^/.]+)/relationships/(?P<related_field>[-\w]+)$',
         AlbumRelationShipView.as_view(),
-        name='order-relationships'
+        name='album-relationships'
     ),
-    path(
-        r'^songs/(?P<pk>[^/.]+)/relationships/(?P<related_field>[-/w]+)$',
+    re_path(
+        r'^songs/(?P<pk>[^/.]+)/relationships/(?P<related_field>[-\w]+)$',
         SongRelationShipView.as_view(),
-        name='order-relationships'
+        name='song-relationships'
     )
 ]
 

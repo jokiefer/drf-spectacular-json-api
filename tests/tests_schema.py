@@ -2,17 +2,19 @@ import json
 
 import rest_framework_json_api
 from django.test.testcases import SimpleTestCase
-from django.urls import path
+from django.urls import path, re_path
 from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 from rest_framework.routers import SimpleRouter
 
 from drf_spectacular_jsonapi.schemas.pagination import \
     JsonApiPageNumberPagination
+from tests.models import Album, Song
 from tests.serializers import (AlbumWithNestedIncludesSerializer,
                                SongWithCreatorSerializer)
 from tests.views import (AlbumFilteredViewset, AlbumModelViewset,
-                         AlbumWithNestedIncludesViewset, SongModelViewset)
+                         AlbumRelationShipView, AlbumWithNestedIncludesViewset,
+                         SongModelViewset, SongRelationShipView)
 
 
 class SimpleSchemaTestCase(SimpleTestCase):
@@ -875,7 +877,10 @@ class TestSchemaOutputForRelationshipView(SimpleSchemaTestCase):
                     ('in', 'path'),
                     ('name', 'related_field'),
                     ('required', True),
-                    ('schema', [('enum', ['single']), ('pattern', '^[-/w]+$'), ('type', 'string')])]
+                    # `singles` is the accessor `Album` really carries: Song.album
+                    # declares related_name="singles" and related_query_name="single",
+                    # and the view resolves the segment with getattr on the instance
+                    ('schema', [('enum', ['singles']), ('pattern', '^[-\\w]+$'), ('type', 'string')])]
             ]
         )
         self.assertEqual(expected, calculated)
@@ -906,7 +911,9 @@ class TestSchemaOutputForRelationshipView(SimpleSchemaTestCase):
                     ('in', 'path'),
                     ('name', 'related_field'),
                     ('required', True),
-                    ('schema', [('enum', ['album', 'created_by', 'specialsong']), ('pattern', '^[-/w]+$'), ('type', 'string')])]
+                    # not `specialsong`: that is the link of the SpecialSong child of
+                    # this multi table inheritance parent, an attribute of the child
+                    ('schema', [('enum', ['album', 'created_by']), ('pattern', '^[-\\w]+$'), ('type', 'string')])]
             ]
         )
         self.assertEqual(expected, calculated)
@@ -917,8 +924,7 @@ class TestSchemaOutputForRelationshipView(SimpleSchemaTestCase):
             [
                 "Album",
                 "User",
-                "RelationshipViews",
-                "SpecialSong"
+                "RelationshipViews"
             ]
         )
         self.assertEqual(expected, calculated)
@@ -996,6 +1002,106 @@ class TestOasValidityOfFilterParameterTitle(SimpleSchemaTestCase):
 
     def test_the_document_validates(self):
         validate_schema(self.schema)
+
+
+class TestRelationshipFieldNamesResolveAgainstTheModel(SimpleSchemaTestCase):
+    """
+    `related_field` is not a name the schema may invent: the view looks it up on an
+    instance of its own model, in
+    :meth:`rest_framework_json_api.views.RelationshipView.get_related_instance` as
+    `getattr(self.get_object(), self.get_related_field_name())`. A documented value
+    which is not such an attribute is a value the server answers with 404, and a
+    generated client offers it as a valid choice of an enumerated argument.
+
+    Two spellings are near misses which the model itself offers: the key a reverse
+    relation is stored under in `_meta.fields_map` is its query name
+    (`Song.objects.filter(single=...)`), not the attribute it is reached by
+    (`album.singles`); and the link of a multi table inheritance child belongs to the
+    child, so the parent has no such attribute.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.relationship_paths = {
+            "/albums/{id}/relationships/{related_field}": (
+                AlbumRelationShipView, Album),
+            "/songs/{id}/relationships/{related_field}": (
+                SongRelationShipView, Song),
+        }
+
+    def documented_values(self, path):
+        parameters = self.schema["paths"][path]["get"]["parameters"]
+        parameter = next(
+            parameter for parameter in parameters
+            if parameter["name"] == "related_field")
+        return parameter["schema"]["enum"]
+
+    def relation_attributes_of(self, model):
+        """the names a RelationshipView of *model* finds on an instance of it"""
+        forward = (
+            field.name for field in model._meta.fields
+            if getattr(field, "related_model", None) is not None)
+        # explicitly not `_meta.fields_map`: its keys are the query names of reverse
+        # relations, and `parent_link` relations are the child's, not the parent's
+        reverse = (
+            relation.get_accessor_name()
+            for relation in model._meta.related_objects
+            if not getattr(relation, "parent_link", False))
+        return set(forward) | set(reverse)
+
+    def test_a_reverse_relation_is_documented_by_its_accessor(self):
+        values = self.documented_values(
+            "/albums/{id}/relationships/{related_field}")
+
+        # Song.album declares related_name="singles" and related_query_name="single",
+        # and only the first of them is an attribute of an Album
+        self.assertEqual(["singles"], values)
+
+    def test_the_link_of_an_inheritance_child_is_not_a_relationship_of_the_parent(self):
+        values = self.documented_values(
+            "/songs/{id}/relationships/{related_field}")
+
+        self.assertEqual({"album", "created_by"}, set(values))
+
+    def test_every_documented_value_is_resolved_by_the_view_itself(self):
+        """
+        Checked with the view's own name resolution rather than with a copy of it:
+        `get_related_field_name` undoes the URL's link formatting and consults
+        `field_name_mapping`, which is exactly what happens in the request.
+        """
+        for url, (view_class, model) in self.relationship_paths.items():
+            view = view_class()
+            for value in self.documented_values(url):
+                view.kwargs = {"related_field": value}
+                with self.subTest(url=url, related_field=value):
+                    self.assertIn(
+                        view.get_related_field_name(),
+                        self.relation_attributes_of(model))
+
+    def test_a_view_naming_its_segment_documents_that_name_too(self):
+        class RenamingSongRelationShipView(SongRelationShipView):
+            field_name_mapping = {"creator": "created_by"}
+
+        schema = SchemaGenerator(patterns=[
+            re_path(
+                r"^renamed-songs/(?P<pk>[^/.]+)/relationships/"
+                r"(?P<related_field>[-\w]+)$",
+                RenamingSongRelationShipView.as_view(),
+                name="renamed-song-relationships"),
+        ]).get_schema(request=None, public=True)
+        parameter = next(
+            parameter
+            for parameter
+            in schema["paths"]["/renamed-songs/{id}/relationships/{related_field}"]["get"]["parameters"]
+            if parameter["name"] == "related_field")
+
+        # the attribute keeps its own name: the mapping is consulted first, but the
+        # attribute is what the segment resolves to either way
+        self.assertEqual({"album", "created_by", "creator"},
+                         set(parameter["schema"]["enum"]))
+        view = RenamingSongRelationShipView()
+        view.kwargs = {"related_field": "creator"}
+        self.assertEqual("created_by", view.get_related_field_name())
 
 
 class TestSparseFieldsetsOfIncludedResources(SimpleSchemaTestCase):
