@@ -225,10 +225,12 @@ class JsonApiAutoSchema(AutoSchema):
 
         The runtime validates what a client sends by walking it down each serializer's
         own ``included_serializers``, segment by segment
-        (:meth:`rest_framework_json_api.filters.IncludedResourcesFilter._validate_path`),
-        so the accepted values are the paths of that mapping graph and this walk is the
-        same graph in the same direction. *segments* is the path as a tuple of formatted
-        field names, which joined with ``.`` is what the spec spells
+        (:meth:`rest_framework_json_api.filters.IncludedResourcesFilter._validate_path`,
+        a filter which that package has since its 9.0.0 - below it the parameter reaches
+        the renderer unchecked, which makes the document the only place naming the
+        paths), so the accepted values are the paths of that mapping graph and this walk
+        is the same graph in the same direction. *segments* is the path as a tuple of
+        formatted field names, which joined with ``.`` is what the spec spells
         (https://jsonapi.org/format/#fetching-includes).
 
         A serializer already on the path being walked is not descended into again: an

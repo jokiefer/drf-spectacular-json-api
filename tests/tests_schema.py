@@ -1,4 +1,5 @@
 import json
+from unittest import skipUnless
 
 import rest_framework_json_api
 from django.test.testcases import SimpleTestCase
@@ -7,7 +8,15 @@ from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 from rest_framework.exceptions import ParseError
 from rest_framework.routers import SimpleRouter
-from rest_framework_json_api.filters import IncludedResourcesFilter
+# the filter which validates an include value arrived with djangorestframework-jsonapi
+# 9.0.0, a package asking for Python 3.11 and Django 5.2; the test matrix installs older
+# ones too and there the parameter is not validated at all. The module has to import on
+# those, so the name is here optional and only the tests comparing the documented paths
+# with what the server accepts ask for it.
+try:
+    from rest_framework_json_api.filters import IncludedResourcesFilter
+except ImportError:
+    IncludedResourcesFilter = None
 
 from drf_spectacular_jsonapi.schemas.pagination import \
     JsonApiPageNumberPagination
@@ -1233,6 +1242,11 @@ class TestNestedIncludePaths(SimpleSchemaTestCase):
     See https://jsonapi.org/format/#fetching-includes
     """
 
+    NO_RUNTIME_VALIDATOR = (
+        "djangorestframework-jsonapi %s is installed and that one does not validate the "
+        "include parameter, the filter doing it arrived with its 9.0.0"
+        % rest_framework_json_api.VERSION)
+
     def setUp(self) -> None:
         self.maxDiff = None
         router = SimpleRouter()
@@ -1269,6 +1283,7 @@ class TestNestedIncludePaths(SimpleSchemaTestCase):
     def test_a_hop_without_included_serializers_invents_no_paths(self):
         self.assertEqual(["songs"], self.include_values("/plain-albums/"))
 
+    @skipUnless(IncludedResourcesFilter is not None, NO_RUNTIME_VALIDATOR)
     def test_every_documented_path_is_accepted_by_the_runtime_validator(self):
         """Checked with the validator itself rather than with a copy of its walk."""
         validator = IncludedResourcesFilter()
@@ -1283,6 +1298,9 @@ class TestNestedIncludePaths(SimpleSchemaTestCase):
     def test_a_path_the_graph_does_not_have_is_documented_neither(self):
         self.assertNotIn(
             "songs.created_by", self.include_values("/plain-albums/"))
+
+    @skipUnless(IncludedResourcesFilter is not None, NO_RUNTIME_VALIDATOR)
+    def test_a_path_the_graph_does_not_have_is_rejected_by_the_validator(self):
         with self.assertRaises(ParseError):
             IncludedResourcesFilter()._validate_path(
                 AlbumSerializer, ["songs", "created_by"], "songs.created_by")
